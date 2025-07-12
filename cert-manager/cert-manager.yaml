@@ -1,0 +1,37 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-dns-cloudflare
+spec:
+  acme:
+    email: xmaeltht@gmail.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-cloudflare-account-key
+    solvers:
+    - dns01:
+        cloudflare:
+          email: xmaeltht@gmail.com
+          apiTokenSecretRef:
+            name: cloudflare-api-token-secret
+            key: api-token
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-cert
+  namespace: argocd
+spec:
+  secretName: argocd-cert
+  commonName: argocd.maelkloud.com
+  duration: 8760h # 365 days
+  renewBefore: 720h # 30 days before expiration
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
+  dnsNames:
+    - argocd.maelkloud.com
+    - argocd-repo.maelkloud.com
+    - argocd-apps.maelkloud.com
+    - dex.maelkloud.com
+    - redis.maelkloud.com
