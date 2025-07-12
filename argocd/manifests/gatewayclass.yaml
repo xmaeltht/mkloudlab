@@ -1,0 +1,10 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: istio
+spec:
+  controllerName: istio.io/gateway-controller
+  parametersRef:
+    group: networking.istio.io
+    kind: GatewayClassConfig
+    name: istio

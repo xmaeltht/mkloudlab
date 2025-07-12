@@ -1,0 +1,165 @@
+# Production ArgoCD Values with Keycloak Integration
+# Use with: helm upgrade argocd argo/argo-cd -f argocd-values.yaml -n argocd
+
+# Global configuration
+global:
+  # Disable Istio injection globally, then selectively enable it
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
+
+# Server configuration  
+server:
+  # Enable Istio for server
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+    annotations:
+      istio.io/ingressGateway: istio-ingressgateway
+      istio.io/ingressGatewayNamespace: istio-system
+  
+  # Disable built-in ingress since we use Gateway API
+  ingress:
+    enabled: false
+  
+  # Server configuration
+  config:
+    url: https://argocd.maelkloud.com
+
+# Repository server
+repository:
+  # Enable Istio for repo server
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+  enabled: true
+  service:
+    type: ClusterIP
+
+# Application controller
+controller:
+  # Enable Istio for controller
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+  service:
+    type: ClusterIP
+
+# ApplicationSet controller
+applicationSet:
+  # Enable Istio for applicationset controller
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+
+# Notifications controller  
+notifications:
+  # Enable Istio for notifications controller
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+
+# Server configuration
+server:
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+    annotations:
+      istio.io/ingressGateway: istio-ingressgateway
+      istio.io/ingressGatewayNamespace: istio-system
+  
+  # Disable built-in ingress since we use Gateway API
+  ingress:
+    enabled: false
+  
+  # Server configuration
+  config:
+    url: https://argocd.maelkloud.com
+
+# Repository server
+repository:
+  enabled: true
+  service:
+    type: ClusterIP
+
+# Application controller
+controller:
+  service:
+    type: ClusterIP
+
+# Disable Dex since we're using Keycloak directly
+dex:
+  enabled: false
+
+# Redis configuration - CRITICAL: Disable Istio injection to prevent init job failures
+redis:
+  enabled: true
+  # Disable Istio injection for Redis pods to prevent startup issues
+  podAnnotations:
+    sidecar.istio.io/inject: "false"
+  serviceAnnotations:
+    sidecar.istio.io/inject: "false"
+  # CRITICAL: Disable Istio for Redis secret init job
+  secretInit:
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
+
+# Disable Redis HA to keep things simple
+redis-ha:
+  enabled: false
+
+# Configuration maps and secrets
+configs:
+  # Server parameters
+  params:
+    server.insecure: "true"
+    
+  # Main configuration
+  cm:
+    url: https://argocd.maelkloud.com
+    
+    # Keycloak OIDC configuration
+    oidc.config: |-
+      name: Keycloak
+      issuer: https://keycloak.maelkloud.com/realms/mkloud
+      clientId: argocd
+      clientSecret: $oidc.keycloak.clientSecret
+      requestedScopes: ["openid", "profile", "email"]
+      requestedIDTokenClaims: {"groups": {"essential": true}}
+      skipClientSecretCheck: false
+      
+  # RBAC configuration
+  rbac:
+    # Default policy for users not in specific groups
+    policy.default: role:readonly
+
+    # Policy definitions and group mappings
+    policy.csv: |-
+      p, role:admin, applications, *, */*, allow
+      p, role:admin, clusters, *, *, allow
+      p, role:admin, repositories, *, *, allow
+      p, role:admin, certificates, *, *, allow
+      p, role:admin, accounts, *, *, allow
+      p, role:admin, gpgkeys, *, *, allow
+      p, role:admin, logs, *, *, allow
+      p, role:admin, exec, *, *, allow
+      p, role:admin, projects, *, *, allow
+      
+      p, role:developer, applications, get, */*, allow
+      p, role:developer, applications, sync, */*, allow
+      p, role:developer, applications, action/*, */*, allow
+      p, role:developer, repositories, get, *, allow
+      p, role:developer, clusters, get, *, allow
+      p, role:developer, logs, get, *, allow
+      p, role:developer, projects, get, *, allow
+      
+      p, role:readonly, applications, get, */*, allow
+      p, role:readonly, repositories, get, *, allow
+      p, role:readonly, clusters, get, *, allow
+      p, role:readonly, logs, get, *, allow
+      p, role:readonly, projects, get, *, allow
+      
+      g, maelkloud-admins, role:admin
+      g, authenticated, role:readonly
+    
+    # Enable group-based authorization
+    scopes: "[groups]"
