@@ -1,0 +1,18 @@
+---
+# ------------------------------------------
+# Certificate: Traefik Dashboard
+# ------------------------------------------
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-cert
+  namespace: traefik
+spec:
+  secretName: traefik-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - traefik.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
