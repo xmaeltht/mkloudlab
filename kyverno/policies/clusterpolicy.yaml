@@ -1,0 +1,171 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-signed-images-updated
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: verify-image
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      verifyImages:
+        - image: "ghcr.io/myorg/*"
+          key: |
+            -----BEGIN PUBLIC KEY-----
+            REPLACE_WITH_YOUR_VALID_PUBLIC_KEY
+            -----END PUBLIC KEY-----
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-hostpath-updated
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: hostpath-mount
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - sonarqube
+                - keycloak
+                - local-path-storage
+                - gitlab
+                - jenkins
+                - kyverno
+      validate:
+        message: "HostPath volumes are strictly prohibited."
+        foreach:
+          - list: "spec.volumes"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.hostPath }}"
+                    operator: NotEquals
+                    value: null
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-run-as-nonroot-updated
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: run-as-non-root
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - sonarqube
+                - keycloak
+                - local-path-storage
+                - gitlab
+                - jenkins
+                - kyverno
+      validate:
+        message: "Containers must run as non-root users."
+        foreach:
+          - list: "spec.containers"
+            pattern:
+              securityContext:
+                runAsNonRoot: true
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-updated
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: privileged-containers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - argocd
+                - sonarqube
+                - keycloak
+                - local-path-storage
+                - gitlab
+                - jenkins
+                - kyverno
+      validate:
+        message: "Privileged containers are not permitted."
+        foreach:
+          - list: "spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.securityContext.privileged }}"
+                    operator: Equals
+                    value: true
+---
+apiVersion: kyverno.io/v2
+kind: ClusterCleanupPolicy
+metadata:
+  name: cleanup-deprecated-v1-endpoints
+  annotations:
+    policies.kyverno.io/title: Cleanup Deprecated Endpoints
+    policies.kyverno.io/description: |
+      This cleanup policy automatically deletes all v1/Endpoints resources.
+      v1/Endpoints is deprecated in Kubernetes v1.33+, and should be replaced
+      by EndpointSlices (discovery.k8s.io/v1).
+    policies.kyverno.io/category: Maintenance
+    policies.kyverno.io/severity: medium
+spec:
+  match:
+    any:
+      - resources:
+          kinds:
+            - Endpoints
+  schedule: "0 * */1 * *"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-v1-endpoints
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: block-v1-endpoints
+      match:
+        any:
+          - resources:
+              kinds:
+                - Endpoints
+              operations:
+                - CREATE
+                - UPDATE
+      validate:
+        message: "v1/Endpoints are deprecated in Kubernetes 1.33+. Use EndpointSlice instead."
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.apiVersion }}"
+                operator: Equals
+                value: "v1"

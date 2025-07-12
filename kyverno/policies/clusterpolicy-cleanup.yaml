@@ -1,0 +1,45 @@
+apiVersion: kyverno.io/v2
+kind: ClusterCleanupPolicy
+metadata:
+  name: cleanup-deprecated-v1-endpoints
+  annotations:
+    policies.kyverno.io/title: Cleanup Deprecated Endpoints
+    policies.kyverno.io/description: |
+      This cleanup policy automatically deletes all v1/Endpoints resources.
+      v1/Endpoints is deprecated in Kubernetes v1.33+, and should be replaced
+      by EndpointSlices (discovery.k8s.io/v1).
+    policies.kyverno.io/category: Maintenance
+    policies.kyverno.io/severity: high
+spec:
+  match:
+    any:
+      - resources:
+          kinds:
+            - Endpoints
+  schedule: "0 */12 * * *"  # Every 12 hours
+
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-v1-endpoints
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: block-v1-endpoints
+      match:
+        resources:
+          kinds:
+            - Endpoints
+          operations:
+            - CREATE
+            - UPDATE
+      validate:
+        message: "v1/Endpoints are deprecated in Kubernetes 1.33+. Use EndpointSlice instead."
+        deny:
+          conditions:
+            - key: "{{ request.object.apiVersion }}"
+              operator: Equals
+              value: "v1"
