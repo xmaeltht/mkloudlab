@@ -1,0 +1,97 @@
+# ------------------------------------------
+# Argo CD Application: Prometheus
+# ------------------------------------------
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prometheus
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: prometheus
+    targetRevision: 27.11.0
+    helm:
+      values: |
+        alertmanager:
+          enabled: false
+        server:
+          ingress:
+            enabled: false
+          persistentVolume:
+            enabled: true
+            storageClass: local-path
+            size: 5Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+---
+# ------------------------------------------
+# Gateway: Shared for Prometheus and Grafana
+# ------------------------------------------
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: monitoring-gateway
+  namespace: monitoring
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: prometheus.maelkloud.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: prometheus-cert
+            kind: Secret
+    - name: https-grafana
+      protocol: HTTPS
+      port: 443
+      hostname: grafana.maelkloud.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: grafana-cert
+            kind: Secret
+---
+# HTTPRoute for Prometheus
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: prometheus-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: monitoring-gateway
+  hostnames:
+    - prometheus.maelkloud.com
+  rules:
+    - backendRefs:
+        - name: prometheus-server
+          port: 80
+---
+# HTTPRoute for Grafana
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: grafana-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: monitoring-gateway
+  hostnames:
+    - grafana.maelkloud.com
+  rules:
+    - backendRefs:
+        - name: grafana
+          port: 80

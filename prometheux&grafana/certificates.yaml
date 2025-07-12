@@ -1,0 +1,32 @@
+---
+# Certificate: Prometheus
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: prometheus-cert
+  namespace: monitoring
+spec:
+  secretName: prometheus-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - prometheus.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
+---
+# Certificate: Grafana
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: grafana-cert
+  namespace: monitoring
+spec:
+  secretName: grafana-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - grafana.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer

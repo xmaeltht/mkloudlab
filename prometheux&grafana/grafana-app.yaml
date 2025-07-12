@@ -1,0 +1,71 @@
+---
+# Argo CD Application: Grafana
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: grafana
+    targetRevision: 9.2.7
+    helm:
+      values: |
+        persistence:
+          enabled: true
+          storageClassName: local-path
+          size: 5Gi
+        adminPassword: admin123
+        service:
+          type: ClusterIP
+        ingress:
+          enabled: false
+        initChownData:
+          enabled: true
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            privileged: true
+            allowPrivilegeEscalation: true
+        # Environment variables from secret
+        envFromSecret: grafana-oauth-secret
+        grafana.ini:
+          server:
+            root_url: https://grafana.maelkloud.com
+            serve_from_sub_path: true
+          auth:
+            disable_login_form: false      # Show the login form for choice
+            disable_signout_menu: false
+            oauth_auto_login: false        # Don't auto-redirect to OAuth
+          auth.generic_oauth:
+            enabled: true
+            name: Keycloak                 # This will appear as a button on the login page
+            allow_sign_up: true
+            client_id: $__env{OAUTH_CLIENT_ID}
+            client_secret: $__env{OAUTH_CLIENT_SECRET}
+            scopes: openid email profile roles
+            auth_url: https://keycloak.maelkloud.com/realms/mkloud/protocol/openid-connect/auth
+            token_url: https://keycloak.maelkloud.com/realms/mkloud/protocol/openid-connect/token
+            api_url: https://keycloak.maelkloud.com/realms/mkloud/protocol/openid-connect/userinfo
+            role_attribute_path: "contains(groups[*], 'maelkloud-admins') && 'Admin' || 'Viewer'"
+            tls_skip_verify_insecure: true         # Temporarily enable for debugging
+            use_pkce: false                # Disabled to match Keycloak client config
+            # Additional security settings
+            allow_assign_grafana_admin: true
+            role_attribute_strict: false
+            # Enable debug logging for OAuth
+            signout_redirect_url: https://keycloak.maelkloud.com/realms/mkloud/protocol/openid-connect/logout
+        sidecar:
+          datasources:
+            enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
