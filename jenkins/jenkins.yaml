@@ -1,0 +1,146 @@
+# Jenkins Basic Configuration - Working Version
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: jenkins
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.jenkins.io
+    chart: jenkins
+    targetRevision: 5.8.59
+    helm:
+      values: |
+        controller:
+          podAnnotations:
+            sidecar.istio.io/inject: "true"
+            traffic.sidecar.istio.io/includeInboundPorts: "8080"
+            traffic.sidecar.istio.io/excludeInboundPorts: ""
+          serviceType: ClusterIP
+          servicePort: 8080
+          targetPort: 8080
+          
+          # Admin credentials
+          admin:
+            password: "admin123"
+          
+          # Minimal plugins - no SAML yet
+          installPlugins:
+            - kubernetes
+            - workflow-aggregator
+            - git
+            - credentials-binding
+            - matrix-auth
+            - role-strategy
+          
+          # Enable basic JCasC to force authentication
+          JCasC:
+            defaultConfig: true
+            configScripts:
+              security: |
+                jenkins:
+                  securityRealm:
+                    local:
+                      allowsSignup: false
+                      users:
+                        - id: "admin"
+                          password: "admin123"
+                  authorizationStrategy:
+                    loggedInUsersCanDoAnything:
+                      allowAnonymousRead: false
+          
+          # Resource configuration
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+            
+          # Readiness and liveness probes
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12
+            
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 5
+            
+        # Persistence configuration
+        persistence:
+          enabled: true
+          storageClass: local-path
+          size: 10Gi
+          accessMode: ReadWriteOnce
+          
+        # Service account and RBAC
+        serviceAccount:
+          create: true
+          name: jenkins
+          
+        rbac:
+          create: true
+          readSecrets: true
+            
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: jenkins
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+---
+# Gateway for Jenkins
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: jenkins-gateway
+  namespace: jenkins
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "jenkins.maelkloud.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: jenkins-cert
+            kind: Secret
+
+---
+# HTTPRoute for Jenkins
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: jenkins-route
+  namespace: jenkins
+spec:
+  parentRefs:
+    - name: jenkins-gateway
+  hostnames:
+    - "jenkins.maelkloud.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: jenkins
+          port: 8080
