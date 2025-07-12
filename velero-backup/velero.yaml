@@ -1,0 +1,59 @@
+---
+# Argo CD Application: Velero with local backup storage
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://vmware-tanzu.github.io/helm-charts/
+    chart: velero
+    targetRevision: 9.0.4
+    helm:
+      values: |
+        initContainers:
+          - name: velero-plugin-for-aws
+            image: velero/velero-plugin-for-aws:v1.8.0
+            volumeMounts:
+              - mountPath: /target
+                name: plugins
+
+        deployNodeAgent: true
+
+        credentials:
+          useSecret: true
+          existingSecret: velero-credentials
+
+        configuration:
+          backupStorageLocation:
+            - name: default
+              provider: aws
+              bucket: velero-local
+              default: true
+              config:
+                region: minio
+                s3Url: http://velero-minio.monitoring.svc:9000
+                insecureSkipTLSVerify: false
+                s3ForcePathStyle: true
+          volumeSnapshotLocation:
+            - name: default
+              provider: aws
+              config:
+                region: minio
+        serviceAccount:
+          server:
+            create: true
+            name: velero
+        metrics:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,210 @@
+---
+# MinIO Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minio
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.min.io
+    chart: minio
+    targetRevision: 5.2.0
+    helm:
+      values: |
+        # Root credentials
+        existingSecret: minio-secret
+
+        # Console configuration
+        consoleService:
+          type: ClusterIP
+
+        # MinIO server configuration
+        environment:
+          MINIO_BROWSER_REDIRECT_URL: "https://minio.maelkloud.com"
+          MINIO_SERVER_URL: "https://minio.maelkloud.com"
+          # OpenID Connect configuration
+          MINIO_IDENTITY_OPENID_CONFIG_URL: "https://keycloak.maelkloud.com/realms/mkloud/.well-known/openid_configuration"
+          MINIO_IDENTITY_OPENID_CLIENT_ID: "minio"
+          MINIO_IDENTITY_OPENID_CLAIM_NAME: "policy"
+          MINIO_IDENTITY_OPENID_CLAIM_USERINFO: "on"
+          MINIO_IDENTITY_OPENID_REDIRECT_URI: "https://minio.maelkloud.com/oauth_callback"
+          MINIO_IDENTITY_OPENID_SCOPES: "openid,profile,email"
+          MINIO_IDENTITY_OPENID_COMMENT: "Keycloak SSO"
+
+        # Environment variables from secret
+        extraEnvVars:
+          - name: MINIO_IDENTITY_OPENID_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: minio-oauth-secret
+                key: OAUTH_CLIENT_SECRET
+
+        # Persistence
+        persistence:
+          enabled: true
+          storageClass: local-path
+          size: 50Gi
+
+        # Ingress disabled (assuming you have external ingress)
+        ingress:
+          enabled: false
+        consoleIngress:
+          enabled: false
+
+        # Resources
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: minio
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+
+---
+# MinIO credentials for Velero
+apiVersion: v1
+kind: Secret
+metadata:
+  name: velero-credentials
+  namespace: velero
+type: Opaque
+stringData:
+  cloud: |
+    [default]
+    aws_access_key_id = velero
+    aws_secret_access_key = velero123
+
+---
+# PVC for MinIO storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-pvc
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# MinIO Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: velero-minio
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: velero-minio
+  template:
+    metadata:
+      labels:
+        app: velero-minio
+    spec:
+      containers:
+        - name: minio
+          image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          env:
+            - name: MINIO_ROOT_USER
+              value: velero
+            - name: MINIO_ROOT_PASSWORD
+              value: velero123
+          ports:
+            - name: s3
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-pvc
+
+---
+# MinIO Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: velero-minio
+  namespace: monitoring
+spec:
+  selector:
+    app: velero-minio
+  ports:
+    - name: s3
+      protocol: TCP
+      port: 9000
+      targetPort: 9000
+    - name: console
+      protocol: TCP
+      port: 9001
+      targetPort: 9001
+
+---
+# MinIO HTTPS Gateway API Gateway
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: minio-gateway
+  namespace: monitoring
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: minio.maelkloud.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: minio-cert
+            kind: Secret
+
+---
+# MinIO HTTPRoute
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: minio-route
+  namespace: monitoring
+spec:
+  parentRefs:
+    - name: minio-gateway
+  hostnames:
+    - minio.maelkloud.com
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: velero-minio
+          port: 9001
