@@ -1,0 +1,25 @@
+# Terraform / OpenTofu state
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+
+# Secret variables files
+# These should not be committed to Git. A terraform.tfvars.example should be used instead.
+terraform.tfvars
+*.tfvars
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS files
+.DS_Store
+
+# Windows files
+Thumbs.db
+
+# Log files
+*.log
