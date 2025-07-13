@@ -1,0 +1,25 @@
+# Application manifest for Kyverno custom policies
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/xmaeltht/mkloudlab.git'
+    path: kyverno
+    targetRevision: HEAD
+    directory:
+      exclude: '{kyverno-app.yaml,helm-values.yaml,README.md}'
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
