@@ -1,0 +1,15 @@
+extends: relaxed
+rules:
+  line-length:
+    max: 120
+    level: warning
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+  trailing-spaces: enable
+  colons:
+    max-spaces-before: 0
+    max-spaces-after: 1
