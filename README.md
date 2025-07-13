@@ -19,17 +19,38 @@ This platform is built on a foundation of industry-standard cloud-native tools:
 -   **Infrastructure as Code:** Terraform (for Keycloak configuration)
 -   **Local Provisioning:** Vagrant & Kubeadm
 
-## Deployment Flow
+## Automated Deployment with ArgoCD
 
-The general deployment process follows the principles of GitOps, where the state of the cluster is defined declaratively in this repository.
+This repository uses the **App of Apps** pattern to fully automate the deployment of the entire stack. After provisioning a Kubernetes cluster, the process is reduced to two main steps.
 
-1.  **Provision Cluster:** Use the scripts in the `vagrant-provisioning-k8s` directory to spin up a local Kubernetes cluster.
-2.  **Install Prerequisites:** Deploy core infrastructure services. This is the recommended order:
-    -   [Traefik](./traefik/README.md): To handle all incoming cluster traffic.
-    -   [Cert-Manager](./cert-manager/README.md): To automate TLS certificate management.
-3.  **Deploy ArgoCD:** Install the GitOps controller using the manifests in the [argocd](./argocd/README.md) directory.
-4.  **Deploy Applications:** With ArgoCD running, deploy the applications by applying their respective ArgoCD `Application` manifests, as detailed in their `README.md` files.
-5.  **Configure Keycloak:** Use the Terraform scripts in `terraform/keycloak-realm` to configure realms, clients, and users in your Keycloak instance.
+### 1. Install ArgoCD
+
+First, install ArgoCD into your cluster. The manifests for this are in the `argocd/manifests` directory.
+
+```bash
+# Create the namespace for ArgoCD
+kubectl create namespace argocd
+
+# Apply the ArgoCD installation manifests
+kubectl apply -n argocd -f argocd/manifests/argocd-values.yaml
+```
+
+### 2. Deploy the Entire Stack
+
+With ArgoCD running, apply the `root-app.yaml`. This single manifest is the entry point for the "App of Apps" pattern. It tells ArgoCD to deploy all other applications defined in the `argocd/apps` directory.
+
+```bash
+kubectl apply -f argocd/root-app.yaml
+```
+
+ArgoCD will now begin deploying and configuring the entire stack in the correct order. You can monitor the progress from the ArgoCD UI.
+
+### 3. Post-Deployment Configuration
+
+Some applications require secrets or configurations that should not be stored in Git. After the main deployment is complete, run the following scripts:
+
+-   **Keycloak Configuration:** Use the Terraform scripts in `terraform/keycloak-realm` to configure realms and clients.
+-   **Application Secrets:** Run the `secret.sh` script in the same directory to create the necessary OAuth secrets for Grafana, Prometheus, etc.
 
 ## Repository Structure
 
@@ -37,7 +58,7 @@ Each directory contains the Kubernetes manifests or configuration for a specific
 
 | Directory                               | Description                                                                        |
 | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| [argocd](./argocd/)                     | Manifests to deploy the ArgoCD GitOps controller.                                  |
+| [argocd](./argocd/)                     | Contains the ArgoCD installation, the **root application**, and all child app manifests. |
 | [cert-manager](./cert-manager/)         | Manifests to deploy Cert-Manager for automated TLS certificates.                   |
 | [traefik](./traefik/)                   | Manifests for the Traefik Ingress Controller.                                      |
 | [kyverno](./kyverno/)                   | Kyverno policy engine and a set of custom security policies.                       |
