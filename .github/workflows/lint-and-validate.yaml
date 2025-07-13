@@ -32,7 +32,8 @@ jobs:
       - name: Run kubeconform on all manifests
         run: |
           kubeconform -summary -output=text \
-            -skip argocd/manifests/argocd-values.yaml,kyverno/helm-values.yaml \
+            -skip argocd/manifests/argocd-values.yaml \
+            -skip kyverno/helm-values.yaml \
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
             argocd/ \
