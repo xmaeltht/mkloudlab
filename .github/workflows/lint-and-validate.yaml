@@ -27,7 +27,7 @@ jobs:
         run: 'yamllint . --config-data "{extends: relaxed, rules: {line-length: {max: 120}}}"'
 
       - name: Set up Kubeconform
-        uses: yannh/kubeconform-action@v1
+        uses: bmuschko/setup-kubeconform@v1
 
       - name: Run kubeconform on all manifests
         run: >
