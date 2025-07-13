@@ -1,0 +1,43 @@
+name: Lint and Validate
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Run yamllint
+        run: 'yamllint . --config-data "{extends: relaxed, rules: {line-length: {max: 120}}}"'
+
+      - name: Set up Kubeconform
+        uses: yannh/kubeconform-action@v1
+
+      - name: Run kubeconform on all manifests
+        run: >
+          kubeconform -summary -output=text
+          argocd/
+          cert-manager/
+          jenkins/
+          keycloak/
+          kyverno/
+          prometheus-grafana/
+          sonarqube/
+          traefik/
+          velero-backup/
