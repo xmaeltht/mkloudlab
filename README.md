@@ -47,4 +47,4 @@ Each directory contains the Kubernetes manifests or configuration for a specific
 | [jenkins](./jenkins/)                   | Manifests for the Jenkins CI/CD automation server.                                 |
 | [velero-backup](./velero-backup/)       | Manifests for Velero and MinIO to handle cluster backup and restore.               |
 | [terraform/keycloak-realm](./terraform/keycloak-realm/) | Terraform code to manage Keycloak realms, clients, and users declaratively.        |
-| `vagrant-provisioning-k8s`              | Scripts to provision a local multi-node Kubernetes cluster using Vagrant.          |
+| [vagrant-provisioning-k8s](./vagrant-provisioning-k8s/) | Scripts to provision a local multi-node Kubernetes cluster using Vagrant.          |
