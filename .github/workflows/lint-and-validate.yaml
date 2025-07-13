@@ -24,7 +24,7 @@ jobs:
         run: pip install yamllint
 
       - name: Run yamllint
-        run: 'yamllint . --config-data "{extends: relaxed, rules: {line-length: {max: 120}}}"'
+        run: yamllint .
 
       - name: Set up Kubeconform
         uses: bmuschko/setup-kubeconform@v1
