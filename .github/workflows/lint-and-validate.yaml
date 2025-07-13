@@ -31,9 +31,9 @@ jobs:
 
       - name: Run kubeconform on all manifests
         run: |
-          find . -type f \( -name "*.yaml" -o -name "*.yml" \) \
-            ! -path "./argocd/manifests/argocd-values.yaml" \
-            ! -path "./kyverno/helm-values.yaml" \
+          find argocd cert-manager jenkins keycloak kyverno prometheus-grafana sonarqube traefik velero-backup -type f \( -name "*.yaml" -o -name "*.yml" \) \
+            ! -name "argocd-values.yaml" \
+            ! -name "helm-values.yaml" \
             | xargs kubeconform -summary -output=text \
               -schema-location default \
               -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
