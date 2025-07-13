@@ -64,8 +64,6 @@ spec:
           - name: KC_HOSTNAME_STRICT
             value: "false"
 
-
-
   destination:
     server: https://kubernetes.default.svc
     namespace: keycloak

@@ -9,13 +9,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/xmaeltht/mkloudlab.git'
+    repoURL: "https://github.com/xmaeltht/mkloudlab.git"
     path: kyverno
     targetRevision: HEAD
     directory:
       include: kyverno-app.yaml
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: "https://kubernetes.default.svc"
     namespace: argocd # This app creates another app, so it goes in argocd ns
   syncPolicy:
     automated:

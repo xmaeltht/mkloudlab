@@ -9,12 +9,12 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-cloudflare-account-key
     solvers:
-    - dns01:
-        cloudflare:
-          email: xmaeltht@gmail.com
-          apiTokenSecretRef:
-            name: cloudflare-api-token-secret
-            key: api-token
+      - dns01:
+          cloudflare:
+            email: xmaeltht@gmail.com
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

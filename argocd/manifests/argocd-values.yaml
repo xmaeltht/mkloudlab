@@ -7,7 +7,7 @@ global:
   podAnnotations:
     sidecar.istio.io/inject: "false"
 
-# Server configuration  
+# Server configuration
 server:
   # Enable Istio for server
   podAnnotations:
@@ -19,11 +19,11 @@ server:
     annotations:
       istio.io/ingressGateway: istio-ingressgateway
       istio.io/ingressGatewayNamespace: istio-system
-  
+
   # Disable built-in ingress since we use Gateway API
   ingress:
     enabled: false
-  
+
   # Server configuration
   config:
     url: https://argocd.maelkloud.com
@@ -51,40 +51,11 @@ applicationSet:
   podAnnotations:
     sidecar.istio.io/inject: "true"
 
-# Notifications controller  
+# Notifications controller
 notifications:
   # Enable Istio for notifications controller
   podAnnotations:
     sidecar.istio.io/inject: "true"
-
-# Server configuration
-server:
-  service:
-    type: ClusterIP
-    port: 80
-    targetPort: 8080
-    annotations:
-      istio.io/ingressGateway: istio-ingressgateway
-      istio.io/ingressGatewayNamespace: istio-system
-  
-  # Disable built-in ingress since we use Gateway API
-  ingress:
-    enabled: false
-  
-  # Server configuration
-  config:
-    url: https://argocd.maelkloud.com
-
-# Repository server
-repository:
-  enabled: true
-  service:
-    type: ClusterIP
-
-# Application controller
-controller:
-  service:
-    type: ClusterIP
 
 # Disable Dex since we're using Keycloak directly
 dex:
@@ -112,11 +83,11 @@ configs:
   # Server parameters
   params:
     server.insecure: "true"
-    
+
   # Main configuration
   cm:
     url: https://argocd.maelkloud.com
-    
+
     # Keycloak OIDC configuration
     oidc.config: |-
       name: Keycloak
@@ -126,11 +97,11 @@ configs:
       requestedScopes: ["openid", "profile", "email"]
       requestedIDTokenClaims: {"groups": {"essential": true}}
       skipClientSecretCheck: false
-      
+
   # RBAC configuration
   rbac:
     # Default policy for users not in specific groups
-    policy.default: role:readonly
+    policy.default: "role:readonly"
 
     # Policy definitions and group mappings
     policy.csv: |-
@@ -143,7 +114,7 @@ configs:
       p, role:admin, logs, *, *, allow
       p, role:admin, exec, *, *, allow
       p, role:admin, projects, *, *, allow
-      
+
       p, role:developer, applications, get, */*, allow
       p, role:developer, applications, sync, */*, allow
       p, role:developer, applications, action/*, */*, allow
@@ -151,15 +122,15 @@ configs:
       p, role:developer, clusters, get, *, allow
       p, role:developer, logs, get, *, allow
       p, role:developer, projects, get, *, allow
-      
+
       p, role:readonly, applications, get, */*, allow
       p, role:readonly, repositories, get, *, allow
       p, role:readonly, clusters, get, *, allow
       p, role:readonly, logs, get, *, allow
       p, role:readonly, projects, get, *, allow
-      
+
       g, maelkloud-admins, role:admin
       g, authenticated, role:readonly
-    
+
     # Enable group-based authorization
     scopes: "[groups]"

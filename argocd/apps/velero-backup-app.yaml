@@ -9,11 +9,11 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/xmaeltht/mkloudlab.git'
+    repoURL: "https://github.com/xmaeltht/mkloudlab.git"
     path: velero-backup
     targetRevision: HEAD
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: "https://kubernetes.default.svc"
     namespace: velero
   syncPolicy:
     automated:

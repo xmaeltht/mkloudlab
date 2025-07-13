@@ -9,13 +9,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/xmaeltht/mkloudlab.git'
+    repoURL: "https://github.com/xmaeltht/mkloudlab.git"
     path: kyverno
     targetRevision: HEAD
     directory:
-      exclude: '{kyverno-app.yaml,helm-values.yaml,README.md}'
+      exclude: "{kyverno-app.yaml,helm-values.yaml,README.md}"
   destination:
-    server: 'https://kubernetes.default.svc'
+    server: "https://kubernetes.default.svc"
     namespace: kyverno
   syncPolicy:
     automated:

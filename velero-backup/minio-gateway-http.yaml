@@ -55,4 +55,3 @@ spec:
       backendRefs:
         - name: velero-minio
           port: 9001
-

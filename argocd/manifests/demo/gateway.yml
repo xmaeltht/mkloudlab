@@ -4,7 +4,7 @@ metadata:
   name: my-gateway
   namespace: default
 spec:
-  gatewayClassName: istio  # or your GatewayClass name
+  gatewayClassName: istio # or your GatewayClass name
   listeners:
     - name: http
       port: 80

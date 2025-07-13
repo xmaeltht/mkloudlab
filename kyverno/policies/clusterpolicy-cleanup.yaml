@@ -16,8 +16,7 @@ spec:
       - resources:
           kinds:
             - Endpoints
-  schedule: "0 */12 * * *"  # Every 12 hours
-
+  schedule: "0 */12 * * *" # Every 12 hours
 
 ---
 apiVersion: kyverno.io/v1

@@ -20,7 +20,6 @@ spec:
             name: argocd-cert
             namespace: argocd
 
-
 ---
 # argocd-httproute.yaml
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -42,4 +41,3 @@ spec:
       backendRefs:
         - name: argocd-server
           port: 80
-
