@@ -10,7 +10,7 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/xmaeltht/mkloudlab.git'
-    path: prometheux&grafana
+    path: prometheus-grafana
     targetRevision: HEAD
   destination:
     server: 'https://kubernetes.default.svc'
