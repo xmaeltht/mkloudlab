@@ -64,7 +64,7 @@ Each directory contains the Kubernetes manifests or configuration for a specific
 | [kyverno](./kyverno/)                   | Kyverno policy engine and a set of custom security policies.                       |
 | [keycloak](./keycloak/)                 | Manifests for the Keycloak Identity and Access Management server.                  |
 | [sonarqube](./sonarqube/)               | Manifests for the SonarQube static code analysis platform.                         |
-| [prometheus-grafana](./prometheux&grafana/) | Manifests for the Prometheus & Grafana monitoring stack.                           |
+| [prometheus-grafana](./prometheus-grafana/) | Manifests for Prometheus & Grafana for monitoring.                                 |
 | [jenkins](./jenkins/)                   | Manifests for the Jenkins CI/CD automation server.                                 |
 | [velero-backup](./velero-backup/)       | Manifests for Velero and MinIO to handle cluster backup and restore.               |
 | [terraform/keycloak-realm](./terraform/keycloak-realm/) | Terraform code to manage Keycloak realms, clients, and users declaratively.        |
