@@ -23,13 +23,13 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
   config.vm.provision "shell", path: "bootstrap.sh"
 
   # Kubernetes Master Server
-  config.vm.define "controller" do |node|
+  config.vm.define "kcontroller" do |node|
 
-    node.vm.hostname = "controller.example.com"
+    node.vm.hostname = "kcontroller.example.com"
     node.vm.network "private_network", ip: "#{NETWORK_PREFIX}.100"
 
     node.vm.provider :virtualbox do |v|
-      v.name    = "controller"
+      v.name    = "kcontroller"
       v.memory  = MEMORY_MASTER_NODE
       v.cpus    = CPUS_MASTER_NODE
     end
@@ -40,7 +40,7 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
       v.cpus    = CPUS_MASTER_NODE
     end
 
-    node.vm.provision "shell", path: "bootstrap_controller.sh"
+    node.vm.provision "shell", path: "bootstrap_kcontroller.sh"
 
   end
 
