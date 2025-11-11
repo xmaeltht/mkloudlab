@@ -6,7 +6,8 @@ kind: Kustomization
 resources:
   - policies/certificate-protection-policy.yaml
   - policies/clusterpolicy-cleanup.yaml
-  - policies/clusterpolicy.yaml
+  # clusterpolicy.yaml excluded - contains duplicate cleanup-deprecated-v1-endpoints resource
+  # Use clusterpolicy-cleanup.yaml instead which has the correct ClusterCleanupPolicy v2
   - policies/istio-label-policy.yaml
   - rbac/cleanup-controller-role.yaml
   - gateway-kyverno.yaml
