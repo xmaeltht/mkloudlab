@@ -10,62 +10,8 @@ echo "1. Cleaning up old Keycloak resources..."
 kubectl delete statefulset keycloak -n keycloak --ignore-not-found=true
 kubectl delete statefulset keycloak-postgresql -n keycloak --ignore-not-found=true
 
-# 2. Update Keycloak chart version to one that works
-echo "2. Updating Keycloak to working version..."
-kubectl apply -f - <<EOF
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: keycloak
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://charts.bitnami.com/bitnami
-    chart: keycloak
-    targetRevision: 24.0.0
-    helm:
-      values: |
-        auth:
-          adminUser: admin
-          adminPassword: Keycloak123!
-        ingress:
-          enabled: false
-        production: true
-        proxy: edge
-        postgresql:
-          enabled: true
-          auth:
-            postgresPassword: Keycloak123!
-            password: Keycloak123!
-        persistence:
-          enabled: true
-          size: 8Gi
-        service:
-          ports:
-            http: 8080
-            https: 8443
-        extraEnvVars:
-          - name: KC_HTTP_ENABLED
-            value: "true"
-          - name: KC_HTTP_PORT
-            value: "8080"
-          - name: KC_HOSTNAME
-            value: keycloak.maelkloud.com
-          - name: KC_PROXY
-            value: edge
-          - name: KC_HOSTNAME_STRICT
-            value: "false"
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: keycloak
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
-EOF
+# 2. Keycloak is now managed by Flux - check Flux status
+echo "2. Keycloak is managed by Flux. Check status with: task flux:status"
 
 # 3. Fix Loki - disable for now or use simpler config
 echo "3. Disabling Loki temporarily (has persistent storage issues)..."

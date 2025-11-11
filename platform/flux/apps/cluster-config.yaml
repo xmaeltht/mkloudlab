@@ -1,0 +1,20 @@
+# Flux Kustomization for Cluster Configuration (ClusterIssuers, etc.)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-config
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./platform/cert-manager
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
+  targetNamespace: cert-manager
+  wait: true
+  timeout: 5m
+  # Note: cert-manager HelmRelease should be installed first manually
+  # Dependencies across Kustomization and HelmRelease are not directly supported
+

@@ -1,0 +1,18 @@
+# Flux Kustomization for Security Configuration
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: security-config
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./platform/security
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
+  # No targetNamespace - resources apply to their own namespaces
+  wait: true
+  timeout: 5m
+

@@ -1,0 +1,18 @@
+# Flux Kustomization for Grafana Alloy
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: alloy
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./platform/observability/alloy
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
+  targetNamespace: observability
+  wait: true
+  timeout: 5m
+

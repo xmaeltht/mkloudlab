@@ -1,11 +1,10 @@
 # Kustomization file for Prometheus/Grafana monitoring stack
 # This ensures all resources are properly configured with storageClass
+# Note: ArgoCD Application manifests excluded (prometheus_grafana.yaml, grafana-app.yaml)
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - prometheus_grafana.yaml
-  - grafana-app.yaml
   - certificates.yaml
   - service-monitors.yaml
   - prometheus-crd.yaml

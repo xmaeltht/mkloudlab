@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Prerequisites Installation Script
-# This script installs Gateway API, cert-manager, and Istio BEFORE ArgoCD
+# This script installs Gateway API, cert-manager, and Istio BEFORE Flux
 
 set -e
 
@@ -333,4 +333,4 @@ print_status "GatewayClass:"
 kubectl get gatewayclass
 
 print_status "🎉 Prerequisites installation completed successfully!"
-print_status "You can now proceed with ArgoCD installation using: task install:argocd"
+print_status "You can now proceed with Flux installation using: task install:flux"

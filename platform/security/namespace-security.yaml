@@ -1,16 +1,7 @@
 # Pod Security Standards Configuration
 # This file defines security policies for all namespaces
-
-# ArgoCD Namespace - Requires privileged access for GitOps operations
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: argocd
-  labels:
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
-    name: argocd
+# Note: ArgoCD namespace removed (migrated to Flux)
+# Note: Default namespace removed (already exists, cannot be recreated)
 ---
 # Keycloak Namespace - Restricted for security
 apiVersion: v1
@@ -78,13 +69,5 @@ metadata:
     pod-security.kubernetes.io/warn: restricted
     name: cert-manager
 ---
-# Default Namespace - Restricted for general workloads
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: default
-  labels:
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
-    name: default
+# Note: Default namespace not included - it already exists and cannot be recreated
+# To apply security labels to default namespace, use: kubectl label namespace default pod-security.kubernetes.io/enforce=restricted --overwrite

@@ -1,0 +1,24 @@
+# Flux GitRepository - Points to this repository
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: mkloudlab
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/xmaeltht/mkloudlab.git
+  ref:
+    branch: main
+  ignore: |
+    # Ignore non-manifest files
+    .git/
+    .gitignore
+    .yamllint
+    README.md
+    docs/
+    scripts/
+    infrastructure/
+    node_modules/
+    Taskfile.yml
+    *.md
+

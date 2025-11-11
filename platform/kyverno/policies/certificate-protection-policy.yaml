@@ -24,7 +24,7 @@ spec:
               kinds:
                 - Certificate
               apiGroups:
-                - cert-manager.io
+                - "cert-manager.io"
       validate:
         message: "Certificate deletion is protected. To delete, add annotation 'cert-manager.io/allow-deletion: true'"
         deny:

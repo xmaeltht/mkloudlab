@@ -39,42 +39,6 @@ spec:
         - protocol: TCP
           port: 53
 ---
-# ArgoCD network policy
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: argocd-netpol
-  namespace: argocd
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/part-of: argocd
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              name: istio-system
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: argocd
-      ports:
-        - protocol: TCP
-          port: 8080
-        - protocol: TCP
-          port: 8443
-  egress:
-    - to: []
-      ports:
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 80
-        - protocol: UDP
-          port: 53
----
 # Keycloak network policy
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -174,7 +138,7 @@ spec:
               name: sonarqube
         - namespaceSelector:
             matchLabels:
-              name: argocd
+              name: flux-system
         - namespaceSelector:
             matchLabels:
               name: kyverno

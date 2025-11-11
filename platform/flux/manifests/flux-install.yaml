@@ -1,0 +1,24 @@
+# Flux Installation Manifest
+# This installs Flux using the official Flux CLI bootstrap
+# Run: flux install --export > platform/flux/manifests/flux-install.yaml
+# Or use: kubectl apply --server-side -f https://github.com/fluxcd/flux2/releases/latest/download/install.yaml
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flux-system
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: flux-system
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/fluxcd/flux2
+  ref:
+    branch: main
+---
+# Note: The actual Flux controllers are installed via the flux CLI
+# This file is a placeholder - run: flux install to get the actual manifests
+

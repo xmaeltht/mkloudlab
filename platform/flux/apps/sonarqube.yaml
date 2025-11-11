@@ -1,0 +1,119 @@
+# Flux HelmRelease for SonarQube
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: sonarqube
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://SonarSource.github.io/helm-chart-sonarqube
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarqube
+  namespace: flux-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: sonarqube
+      version: 10.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: sonarqube
+        namespace: flux-system
+      interval: 1h
+  values:
+    # Enable community edition
+    community:
+      enabled: true
+      buildNumber: "10.8.1-community"
+    # Image configuration
+    image:
+      repository: sonarqube
+      tag: "10.8.1-community"
+      pullPolicy: IfNotPresent
+    # Monitoring passcode required for probes to work
+    monitoringPasscode: SonarQube123!
+    # Admin credentials
+    account:
+      adminPassword: SonarQube123!
+      currentAdminPassword: admin
+    # Service configuration
+    service:
+      type: ClusterIP
+      externalPort: 9000
+      internalPort: 9000
+    # Ingress disabled - using Gateway API
+    ingress:
+      enabled: false
+    # Persistence
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: local-path
+      accessMode: ReadWriteOnce
+    # Resources
+    resources:
+      requests:
+        cpu: 400m
+        memory: 2048M
+      limits:
+        cpu: 800m
+        memory: 6144M
+    # Security context
+    securityContext:
+      fsGroup: 1000
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 0
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop: ["ALL"]
+    # Database configuration - PostgreSQL subchart
+    postgresql:
+      enabled: true
+      image:
+        repository: bitnami/postgresql
+        tag: "16"
+      postgresqlUsername: sonarUser
+      postgresqlPassword: SonarQube123!
+      postgresqlDatabase: sonarDB
+      persistence:
+        enabled: true
+        size: 10Gi
+        storageClass: local-path
+        accessMode: ReadWriteOnce
+      resources:
+        limits:
+          cpu: 2
+          memory: 2Gi
+        requests:
+          cpu: 100m
+          memory: 200Mi
+    # JVM options
+    jvmOpts: "-Xmx2G -Xms512m"
+    jvmCeOpts: "-Xmx512m -Xms128m"
+    # Monitoring
+    prometheusMonitoring:
+      podMonitor:
+        enabled: false
+    # Readiness and liveness probes
+    readinessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 1
+    livenessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 1
+  targetNamespace: sonarqube
+  install:
+    createNamespace: true
+

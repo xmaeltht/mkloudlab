@@ -1,0 +1,12 @@
+# Kustomization for Security Configuration
+# Excludes namespace-security.yaml if it causes conflicts (namespaces may already exist)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - network-policies.yaml
+  - rbac-policies.yaml
+  - resource-management.yaml
+  # namespace-security.yaml excluded - namespaces are created by HelmReleases/Kustomizations
+  # To apply namespace labels, use kubectl label commands or include in individual app configs
+

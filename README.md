@@ -3,21 +3,21 @@
 Mkloudlab is the authoritative GitOps source for building and operating a production-grade Kubernetes platform. The repository bundles application manifests, infrastructure configuration, automation scripts, and operational runbooks so the entire stack can be managed from a single, versioned control point.
 
 ## Repository Structure
-- `platform/`: ArgoCD bootstrap assets and platform capabilities (cert-manager, Istio, Kyverno, security, observability).
+- `platform/`: Flux GitOps configuration and platform capabilities (cert-manager, Istio, Kyverno, security, observability).
 - `services/`: Workload-specific manifests and supporting configuration for Keycloak, SonarQube, and related gateways.
 - `infrastructure/`: Provisioning and infrastructure-as-code assets, including Terraform modules and Vagrant environments.
 - `scripts/`: Operational shell scripts for setup, prerequisite installation, and recovery workflows.
 - `docs/`: Consolidated documentation, runbooks, reports, and security guidance.
 - `Taskfile.yml`, `docs/reference/TASKS.md`, `docs/reference/TASKFILE_QUICKSTART.md`: Task automation entry points, reference, and quick-start guide.
 
-Welcome to the Mkloudlab GitOps repository. This project provides a complete, automated setup for a Kubernetes cluster, deploying a suite of powerful open-source applications using ArgoCD. It serves as a blueprint for building a robust, secure, and observable cloud-native environment.
+Welcome to the Mkloudlab GitOps repository. This project provides a complete, automated setup for a Kubernetes cluster, deploying a suite of powerful open-source applications using Flux. It serves as a blueprint for building a robust, secure, and observable cloud-native environment.
 
 ## Core Technologies
 
 This platform is built on a foundation of industry-standard cloud-native tools:
 
 -   **Container Orchestration:** Kubernetes
--   **GitOps Controller:** ArgoCD
+-   **GitOps Controller:** Flux CD
 -   **Ingress & Gateway:** Istio with Gateway API
 -   **Load Balancer:** MetalLB
 -   **Certificate Management:** Cert-Manager with Let's Encrypt
@@ -33,31 +33,45 @@ This platform is built on a foundation of industry-standard cloud-native tools:
 -   **Infrastructure as Code:** Terraform (for Keycloak configuration)
 -   **Local Provisioning:** Vagrant & Kubeadm
 
-## Automated Deployment with ArgoCD
+## Automated Deployment with Flux
 
-This repository uses **independent ArgoCD applications** to deploy the entire stack. After provisioning a Kubernetes cluster, the process is reduced to two main steps.
+This repository uses **Flux GitOps** to deploy the entire stack. After provisioning a Kubernetes cluster, the process is automated through Flux controllers.
 
-### 1. Install ArgoCD
+### 1. Install Flux
 
-First, install ArgoCD into your cluster. The manifests for this are in the `argocd/manifests` directory.
-
-```bash
-# Create the namespace for ArgoCD
-kubectl create namespace argocd
-
-# Apply the ArgoCD installation manifests
-kubectl apply -n argocd -f platform/argocd/manifests/argocd-values.yaml
-```
-
-### 2. Deploy the Entire Stack
-
-With ArgoCD running, deploy all applications independently from the `argocd/apps` directory:
+First, install Flux into your cluster:
 
 ```bash
-kubectl apply -f platform/argocd/apps/
+# Install Flux CLI (if not already installed)
+curl -s https://fluxcd.io/install.sh | sudo bash
+
+# Install Flux in the cluster
+task install:flux
 ```
 
-ArgoCD will now begin deploying and configuring all applications independently. You can monitor the progress from the ArgoCD UI.
+### 2. Configure GitRepository
+
+Configure Flux to watch this repository:
+
+```bash
+task flux:configure-repo
+```
+
+### 3. Deploy the Entire Stack
+
+Deploy all applications using Flux:
+
+```bash
+task install:apps
+```
+
+Flux will now begin deploying and configuring all applications automatically. You can monitor the progress using:
+
+```bash
+task flux:status
+# or
+flux get all -n flux-system
+```
 
 ### 3. Post-Deployment Configuration
 
@@ -115,7 +129,7 @@ task status
 - **Simplified Operations**: One command to install the entire stack
 - **Consistent Workflows**: Standardized tasks for development and operations
 - **Error Handling**: Built-in validation and error checking
-- **Component Management**: Specialized tasks for Terraform, Vagrant, and ArgoCD
+- **Component Management**: Specialized tasks for Terraform, Vagrant, and Flux
 - **Development Tools**: Linting, formatting, and validation automation
 
 For detailed usage instructions, see [TASKFILE_QUICKSTART.md](./docs/reference/TASKFILE_QUICKSTART.md).
@@ -179,7 +193,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy-gateway.observability:4318
 - Logs are shipped to the Loki stack, replacing Promtail requirements.
 - Traces are stored in Grafana Tempo (`platform/observability/tempo`) with long-term persistence.
 
-The Alloy manifests are managed at `platform/observability/alloy` (ArgoCD app `platform/argocd/apps/alloy-app.yaml`). Tempo is provisioned via Helm using `platform/argocd/apps/tempo-app.yaml`.
+The Alloy manifests are managed at `platform/observability/alloy` (Flux Kustomization `platform/flux/apps/alloy.yaml`). Tempo is provisioned via Helm using `platform/flux/apps/tempo.yaml`.
 
 ## Repository Structure
 
@@ -187,8 +201,8 @@ Each directory contains the Kubernetes manifests or configuration for a specific
 
 | Directory                               | Description                                                                        |
 | --------------------------------------- | ---------------------------------------------------------------------------------- |
-| [platform/](./platform/)                | Platform building blocks including ArgoCD, cert-manager, Istio, Kyverno, security, and observability. |
-| [platform/argocd/](./platform/argocd/)  | ArgoCD installation manifests, the root application, and all child application definitions. |
+| [platform/](./platform/)                | Platform building blocks including Flux, cert-manager, Istio, Kyverno, security, and observability. |
+| [platform/flux/](./platform/flux/)     | Flux GitOps configuration, GitRepository, and all application definitions (HelmReleases and Kustomizations). |
 | [platform/observability/prometheus-grafana/](./platform/observability/prometheus-grafana/) | Prometheus, Grafana, ServiceMonitors, and supporting observability configuration. |
 | [platform/observability/alloy/](./platform/observability/alloy/) | Grafana Alloy collector (OTLP ingestion, log shipping, metrics fan-out). |
 | [platform/observability/tempo/](./platform/observability/tempo/) | Grafana Tempo trace storage (Helm chart + persistence). |

@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  ARGOCD_NAMESPACE: argocd
+  FLUX_NAMESPACE: flux-system
   KUBECTL_TIMEOUT: 300s
   PROJECT_NAME: mkloudlab
   GIT_REPO_URL: "https://github.com/xmaeltht/mkloudlab.git"
@@ -25,14 +25,13 @@ tasks:
   # =============================================================================
 
   install:
-    desc: Install the entire stack (Prerequisites + ArgoCD + Apps) - Full GitOps workflow
+    desc: Install the entire stack (Prerequisites + Flux + Apps) - Full GitOps workflow
     cmds:
       - task: install:prerequisites
-      - task: install:argocd
-      - task: argocd:configure-repo
+      - task: install:flux
+      - task: flux:configure-repo
       - task: gitops:ensure-committed
       - task: install:apps
-      - task: argocd:sync-all
       - task: install:certificates
       - task: status
 
@@ -43,45 +42,48 @@ tasks:
       - ./scripts/install-prerequisites.sh
       - echo "Prerequisites installed successfully ✓"
 
-  install:argocd:
-    desc: Install ArgoCD in the cluster (requires prerequisites)
+  install:flux:
+    desc: Install Flux in the cluster (requires prerequisites)
     deps: [install:prerequisites]
     cmds:
-      - kubectl create namespace {{.ARGOCD_NAMESPACE}} --dry-run=client -o yaml | kubectl apply -f -
-      - helm repo add argo https://argoproj.github.io/argo-helm
-      - helm repo update
-      - helm upgrade --install argocd argo/argo-cd -n {{.ARGOCD_NAMESPACE}} -f platform/argocd/manifests/argocd-values.yaml --wait
-      - echo "Waiting for ArgoCD to be ready..."
-      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server
-      - echo "Installing ArgoCD Gateway API resources..."
-      - kubectl apply -f platform/argocd/manifests/gatewayclass.yaml
-      - kubectl apply -f platform/argocd/manifests/gateway.yaml
-      - kubectl apply -f platform/argocd/manifests/referencegrant.yaml || true
-      - echo "✅ ArgoCD installation complete"
+      - |
+        if ! command -v flux &> /dev/null; then
+          echo "⚠️  Flux CLI not installed. Installing..."
+          curl -s https://fluxcd.io/install.sh | sudo bash
+        fi
+      - echo "Installing Flux..."
+      - flux install --export | kubectl apply --server-side -f -
+      - echo "Waiting for Flux controllers to be ready..."
+      - sleep 5
+      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment/source-controller -n {{.FLUX_NAMESPACE}}
+      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment/kustomize-controller -n {{.FLUX_NAMESPACE}}
+      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment/helm-controller -n {{.FLUX_NAMESPACE}}
+      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment/notification-controller -n {{.FLUX_NAMESPACE}}
+      - echo "✅ Flux installation complete"
 
   install:apps:
-    desc: Register all ArgoCD applications (they will sync automatically)
-    deps: [validate:cluster, argocd:configure-repo]
+    desc: Register all Flux applications (they will sync automatically)
+    deps: [validate:cluster, flux:configure-repo]
     cmds:
-      - echo "Registering ArgoCD applications..."
+      - echo "Registering Flux applications..."
       - echo "Infrastructure layer..."
-      - kubectl apply -f platform/argocd/apps/cert-manager-app.yaml
-      - kubectl apply -f platform/argocd/apps/external-secrets-app.yaml
-      - kubectl apply -f platform/argocd/apps/kyverno-engine-app.yaml
-      - kubectl apply -f platform/argocd/apps/kyverno-policies-app.yaml
-      - kubectl apply -f platform/argocd/apps/security-config-app.yaml
-      - kubectl apply -f platform/argocd/apps/cluster-config-app.yaml
+      - kubectl apply -f platform/flux/apps/cert-manager.yaml
+      - kubectl apply -f platform/flux/apps/external-secrets.yaml
+      - kubectl apply -f platform/flux/apps/kyverno.yaml
+      - kubectl apply -f platform/flux/apps/kyverno-policies.yaml
+      - kubectl apply -f platform/flux/apps/security-config.yaml
+      - kubectl apply -f platform/flux/apps/cluster-config.yaml
       - echo "Application layer..."
-      - kubectl apply -f platform/argocd/apps/keycloak-app.yaml
-      - kubectl apply -f platform/argocd/apps/keycloak-gateway-app.yaml
-      - kubectl apply -f platform/argocd/apps/sonarqube-app.yaml
-      - kubectl apply -f platform/argocd/apps/sonarqube-gateway-app.yaml
+      - kubectl apply -f platform/flux/apps/keycloak.yaml
+      # keycloak-gateway removed - keycloak kustomization handles all resources
+      - kubectl apply -f platform/flux/apps/sonarqube.yaml
+      # sonarqube-gateway removed - sonarqube HelmRelease handles deployment
       - echo "Observability layer..."
-      - kubectl apply -f platform/argocd/apps/alloy-app.yaml
-      - kubectl apply -f platform/argocd/apps/tempo-app.yaml
-      - kubectl apply -f platform/argocd/apps/monitoring-app.yaml
-      - kubectl apply -f platform/argocd/apps/loki-stack-app.yaml
-      - echo "✅ All ArgoCD applications registered"
+      - kubectl apply -f platform/flux/apps/alloy.yaml
+      - kubectl apply -f platform/flux/apps/tempo.yaml
+      - kubectl apply -f platform/flux/apps/monitoring.yaml
+      - kubectl apply -f platform/flux/apps/loki-stack.yaml
+      - echo "✅ All Flux applications registered"
 
   install:certificates:
     desc: Install and configure TLS certificates with Cloudflare DNS-01
@@ -100,83 +102,60 @@ tasks:
         fi
 
   # =============================================================================
-  # ARGOCD OPERATIONS
+  # FLUX OPERATIONS
   # =============================================================================
 
-  argocd:configure-repo:
-    desc: Configure ArgoCD repository credentials (required for GitOps)
+  flux:configure-repo:
+    desc: Configure Flux GitRepository (required for GitOps)
     cmds:
-      - echo "Configuring ArgoCD repository..."
+      - echo "Configuring Flux GitRepository..."
+      - kubectl apply -f platform/flux/manifests/git-repository.yaml
+      - echo "Waiting for GitRepository to be ready..."
+      - kubectl wait --for=condition=ready --timeout=60s gitrepository/mkloudlab -n {{.FLUX_NAMESPACE}} || true
+      - echo "✅ GitRepository configured"
+
+  flux:sync-all:
+    desc: Force reconcile all Flux resources
+    cmds:
+      - echo "Reconciling all Flux resources..."
       - |
-        # Wait for ArgoCD to be ready
-        kubectl wait --for=condition=available --timeout=60s deployment -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server || true
-      - |
-        # For public repos, ArgoCD will auto-configure. For private repos, use CLI.
-        # Check if repo is already configured
-        if command -v argocd &> /dev/null; then
-          ARGOCD_PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
-          if [ -n "$ARGOCD_PASSWORD" ]; then
-            ARGOCD_SERVER=$(kubectl get svc argocd-server -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "localhost:8080")
-            echo "Configuring repository via ArgoCD CLI..."
-            argocd login $ARGOCD_SERVER --username admin --password "$ARGOCD_PASSWORD" --insecure --grpc-web 2>/dev/null || true
-            argocd repo add {{.GIT_REPO_URL}} --name mkloudlab --type git --insecure-skip-server-verification 2>/dev/null || \
-            argocd repo add {{.GIT_REPO_URL}} --name mkloudlab --type git 2>/dev/null || echo "Repository may already be configured or will be auto-configured"
-          fi
+        if command -v flux &> /dev/null; then
+          flux reconcile source git mkloudlab -n {{.FLUX_NAMESPACE}}
+          for kustomization in $(kubectl get kustomizations -n {{.FLUX_NAMESPACE}} -o name 2>/dev/null); do
+            echo "Reconciling $kustomization..."
+            flux reconcile kustomization $(echo $kustomization | cut -d/ -f2) -n {{.FLUX_NAMESPACE}} || true
+          done
+          for helmrelease in $(kubectl get helmreleases -n {{.FLUX_NAMESPACE}} -o name 2>/dev/null); do
+            echo "Reconciling $helmrelease..."
+            flux reconcile helmrelease $(echo $helmrelease | cut -d/ -f2) -n {{.FLUX_NAMESPACE}} || true
+          done
         else
-          echo "ℹ️  ArgoCD CLI not installed. Public repositories are auto-configured."
-          echo "   For private repos, install CLI: brew install argocd"
+          echo "⚠️  Flux CLI not installed. Install with: curl -s https://fluxcd.io/install.sh | sudo bash"
+          echo "   Or manually trigger reconciliation with kubectl annotate"
         fi
-      - echo "✅ Repository configuration complete (public repos auto-configure)"
+      - echo "✅ Reconciliation triggered for all resources"
 
-  argocd:sync-all:
-    desc: Force sync all ArgoCD applications
-    cmds:
-      - echo "Syncing all ArgoCD applications..."
-      - |
-        for app in $(kubectl get applications -n {{.ARGOCD_NAMESPACE}} -o name 2>/dev/null); do
-          echo "Syncing $app..."
-          kubectl patch $app -n {{.ARGOCD_NAMESPACE}} --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' 2>/dev/null || true
-        done
-      - echo "✅ Sync triggered for all applications"
-
-  argocd:login:
-    desc: Login to ArgoCD CLI
+  flux:status:
+    desc: Show Flux status
     cmds:
       - |
-        ARGOCD_SERVER=$(kubectl get svc argocd-server -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "localhost")
-        ARGOCD_PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' | base64 -d 2>/dev/null)
-        if [ -z "$ARGOCD_PASSWORD" ]; then
-          echo "ArgoCD not found or not properly initialized"
-          exit 1
+        if command -v flux &> /dev/null; then
+          flux get all -n {{.FLUX_NAMESPACE}}
+        else
+          echo "Flux resources:"
+          kubectl get gitrepositories,helmrepositories,kustomizations,helmreleases -n {{.FLUX_NAMESPACE}}
         fi
-        argocd login $ARGOCD_SERVER --username admin --password $ARGOCD_PASSWORD --insecure
-
-  argocd:sync:
-    desc: Sync all ArgoCD applications
-    cmds:
-      - kubectl get applications -n {{.ARGOCD_NAMESPACE}} -o name | xargs -I {} kubectl patch {} -n {{.ARGOCD_NAMESPACE}} --type merge -p '{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
-
-  argocd:ui:
-    desc: Show ArgoCD UI access information
-    cmds:
-      - 'echo "ArgoCD UI: https://argocd.maelkloud.com"'
-      - 'echo "Username: admin"'
-      - |
-        PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' | base64 -d 2>/dev/null || echo 'Not available - ArgoCD not ready')
-        echo "Password: $PASSWORD"
-      - echo "Gateway Status:"
-      - kubectl get gateway argocd-gateway -n {{.ARGOCD_NAMESPACE}} -o wide 2>/dev/null || echo "Gateway not found"
 
   # =============================================================================
   # GITOPS WORKFLOW
   # =============================================================================
 
   gitops:ensure-committed:
-    desc: Ensure all changes are committed and pushed to Git (required for ArgoCD)
+    desc: Ensure all changes are committed and pushed to Git (required for Flux GitOps)
     cmds:
       - |
         if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
-          echo "⚠️  Uncommitted changes detected. ArgoCD requires committed code."
+          echo "⚠️  Uncommitted changes detected. Flux requires committed code for GitOps."
           echo "   Run: task gitops:push"
           echo "   Or continue with uncommitted changes (not recommended for production)"
           # In non-interactive mode, warn but don't block
@@ -197,7 +176,7 @@ tasks:
         LOCAL=$(git rev-parse @ 2>/dev/null || echo "")
         REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "")
         if [ -n "$REMOTE" ] && [ "$LOCAL" != "$REMOTE" ]; then
-          echo "⚠️  Local branch differs from remote. Push recommended for ArgoCD."
+          echo "⚠️  Local branch differs from remote. Push recommended for Flux GitOps."
           echo "   Run: task gitops:push"
         fi
       - echo "✅ Git repository check complete"
@@ -294,8 +273,8 @@ tasks:
     cmds:
       - echo "=== Cluster Info ==="
       - kubectl cluster-info --request-timeout=10s
-      - echo -e "\n=== ArgoCD Applications ==="
-      - kubectl get applications -n {{.ARGOCD_NAMESPACE}} --no-headers 2>/dev/null || echo "ArgoCD not installed or no applications found"
+      - echo -e "\n=== Flux Resources ==="
+      - kubectl get gitrepositories,kustomizations,helmreleases -n {{.FLUX_NAMESPACE}} --no-headers 2>/dev/null || echo "Flux not installed or no resources found"
       - echo -e "\n=== Pod Status by Namespace ==="
       - kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null || echo "All pods are running successfully"
 
@@ -563,7 +542,7 @@ tasks:
     desc: Show access URLs for all services
     cmds:
       - echo "=== Service Access URLs ==="
-      - 'echo "ArgoCD: https://argocd.maelkloud.com"'
+      - 'echo "Flux: Use `flux get all -n flux-system` to view status"'
       - 'echo "Grafana: https://grafana.maelkloud.com"'
       - 'echo "Keycloak: https://keycloak.maelkloud.com"'
       - 'echo "SonarQube: https://sonarqube.maelkloud.com"'
