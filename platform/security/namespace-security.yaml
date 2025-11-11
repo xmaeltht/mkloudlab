@@ -1,0 +1,90 @@
+# Pod Security Standards Configuration
+# This file defines security policies for all namespaces
+
+# ArgoCD Namespace - Requires privileged access for GitOps operations
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: argocd
+---
+# Keycloak Namespace - Restricted for security
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: keycloak
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: keycloak
+---
+# Monitoring Namespace - Restricted for observability
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: monitoring
+---
+# Observability Namespace - Restricted for Alloy collectors
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: observability
+---
+# SonarQube Namespace - Restricted for code quality
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sonarqube
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: sonarqube
+---
+# Kyverno Namespace - Requires privileged access for policy enforcement
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kyverno
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: kyverno
+---
+# Cert-Manager Namespace - Requires privileged access for certificate management
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: cert-manager
+---
+# Default Namespace - Restricted for general workloads
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: default
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    name: default

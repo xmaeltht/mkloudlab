@@ -1,0 +1,36 @@
+# Kyverno policy to protect Certificate resources from accidental deletion
+# Certificates should only be deleted manually with explicit confirmation
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: protect-certificates
+  annotations:
+    policies.kyverno.io/title: Protect Certificates from Deletion
+    policies.kyverno.io/description: |
+      Prevents accidental deletion of Certificate resources managed by cert-manager.
+      Certificates are critical for TLS security and should only be deleted manually
+      after careful consideration. This policy requires explicit confirmation via
+      annotation to allow deletion.
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+spec:
+  validationFailureAction: Enforce
+  background: false
+  rules:
+    - name: prevent-certificate-deletion
+      match:
+        any:
+          - resources:
+              kinds:
+                - Certificate
+              apiGroups:
+                - cert-manager.io
+      validate:
+        message: "Certificate deletion is protected. To delete, add annotation 'cert-manager.io/allow-deletion: true'"
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.metadata.annotations['cert-manager.io/allow-deletion'] }}"
+                operator: NotEquals
+                value: "true"
+

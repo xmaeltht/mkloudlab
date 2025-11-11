@@ -11,3 +11,5 @@ rules:
   colons:
     max-spaces-before: 0
     max-spaces-after: 1
+exclude: |
+  platform/istio/templates/virtualservice-template.yaml

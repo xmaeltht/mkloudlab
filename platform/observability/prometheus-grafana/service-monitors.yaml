@@ -1,0 +1,79 @@
+# ServiceMonitor for ArgoCD
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-metrics
+  namespace: monitoring
+  labels:
+    app: argocd
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-metrics
+  namespaceSelector:
+    matchNames:
+      - argocd
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+---
+# ServiceMonitor for SonarQube
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sonarqube-metrics
+  namespace: monitoring
+  labels:
+    app: sonarqube
+spec:
+  selector:
+    matchLabels:
+      app: sonarqube
+  namespaceSelector:
+    matchNames:
+      - sonarqube
+  endpoints:
+    - port: http
+      interval: 60s
+      path: /api/monitoring/metrics
+---
+# ServiceMonitor for cert-manager
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cert-manager-metrics
+  namespace: monitoring
+  labels:
+    app: cert-manager
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cert-manager
+  namespaceSelector:
+    matchNames:
+      - cert-manager
+  endpoints:
+    - port: tcp-prometheus-servicemonitor
+      interval: 60s
+      path: /metrics
+---
+# ServiceMonitor for Grafana Alloy
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alloy-metrics
+  namespace: monitoring
+  labels:
+    app: grafana-alloy
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: grafana-alloy
+  namespaceSelector:
+    matchNames:
+      - observability
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      path: /metrics

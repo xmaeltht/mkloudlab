@@ -1,0 +1,98 @@
+version: "3"
+
+vars:
+  TF_DIR: ./keycloak-realm
+
+tasks:
+  default:
+    desc: Show Terraform tasks
+    cmds:
+      - task --list
+
+  # =============================================================================
+  # TERRAFORM OPERATIONS
+  # =============================================================================
+
+  init:
+    desc: Initialize Terraform
+    dir: "{{.TF_DIR}}"
+    cmds:
+      - terraform init
+
+  plan:
+    desc: Plan Terraform changes
+    dir: "{{.TF_DIR}}"
+    deps: [init]
+    cmds:
+      - terraform plan -out=tfplan
+
+  apply:
+    desc: Apply Terraform changes
+    dir: "{{.TF_DIR}}"
+    deps: [plan]
+    prompt: Apply Terraform changes to Keycloak configuration?
+    cmds:
+      - terraform apply tfplan
+
+  destroy:
+    desc: Destroy Terraform-managed resources
+    dir: "{{.TF_DIR}}"
+    prompt: This will destroy all Terraform-managed Keycloak resources. Continue?
+    cmds:
+      - terraform destroy -auto-approve
+
+  # =============================================================================
+  # KEYCLOAK OPERATIONS
+  # =============================================================================
+
+  keycloak:setup:
+    desc: Complete Keycloak setup (Terraform + Secrets)
+    cmds:
+      - task: apply
+      - task: secrets:create
+
+  secrets:create:
+    desc: Create OAuth secrets for applications
+    dir: "{{.TF_DIR}}"
+    cmds:
+      - |
+        if [ -f "./secret.sh" ]; then
+          chmod +x ./secret.sh
+          ./secret.sh
+          echo "OAuth secrets created successfully"
+        else
+          echo "secret.sh not found in {{.TF_DIR}}"
+          exit 1
+        fi
+
+  # =============================================================================
+  # UTILITIES
+  # =============================================================================
+
+  validate:
+    desc: Validate Terraform configuration
+    dir: "{{.TF_DIR}}"
+    cmds:
+      - terraform validate
+      - terraform fmt -check=true
+
+  format:
+    desc: Format Terraform files
+    dir: "{{.TF_DIR}}"
+    cmds:
+      - terraform fmt -recursive
+
+  clean:
+    desc: Clean Terraform temporary files
+    dir: "{{.TF_DIR}}"
+    prompt: Remove Terraform state and plan files?
+    cmds:
+      - rm -f terraform.tfstate*
+      - rm -f tfplan
+      - rm -rf .terraform/
+
+  output:
+    desc: Show Terraform outputs
+    dir: "{{.TF_DIR}}"
+    cmds:
+      - terraform output

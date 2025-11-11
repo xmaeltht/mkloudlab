@@ -8,6 +8,7 @@
 # These should not be committed to Git. A terraform.tfvars.example should be used instead.
 terraform.tfvars
 *.tfvars
+pulumi-token
 
 # IDE and editor files
 .idea/
@@ -23,3 +24,9 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Istio downloads
+istio-*/
+
+# Troubleshooting output files
+troubleshoot/

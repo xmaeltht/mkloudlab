@@ -1,0 +1,21 @@
+# Application manifest for cluster-wide configurations (Issuers, etc.)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-config
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/xmaeltht/mkloudlab.git"
+    path: platform/cert-manager # This path contains the ClusterIssuer
+    targetRevision: HEAD
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

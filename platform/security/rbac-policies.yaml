@@ -1,0 +1,129 @@
+# Comprehensive RBAC Policies for Enhanced Security
+
+# Service Account for ArgoCD operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-deployer
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/component: deployer
+---
+# ClusterRole for ArgoCD (minimal permissions)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argocd-deployer-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets", "namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways", "httproutes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# ClusterRoleBinding for ArgoCD
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: argocd-deployer-binding
+subjects:
+  - kind: ServiceAccount
+    name: argocd-deployer
+    namespace: argocd
+roleRef:
+  kind: ClusterRole
+  name: argocd-deployer-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Monitoring operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: monitoring-reader
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: monitoring
+    app.kubernetes.io/component: reader
+---
+# Role for Monitoring (read-only)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: monitoring
+  name: monitoring-reader-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+---
+# RoleBinding for Monitoring
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: monitoring-reader-binding
+  namespace: monitoring
+subjects:
+  - kind: ServiceAccount
+    name: monitoring-reader
+    namespace: monitoring
+roleRef:
+  kind: Role
+  name: monitoring-reader-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Service Account for Security operations
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: security-scanner
+  namespace: kyverno
+  labels:
+    app.kubernetes.io/name: kyverno
+    app.kubernetes.io/component: scanner
+---
+# ClusterRole for Security Scanner
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: security-scanner-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["kyverno.io"]
+    resources: ["clusterpolicies", "policies"]
+    verbs: ["get", "list", "watch"]
+---
+# ClusterRoleBinding for Security Scanner
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: security-scanner-binding
+subjects:
+  - kind: ServiceAccount
+    name: security-scanner
+    namespace: kyverno
+roleRef:
+  kind: ClusterRole
+  name: security-scanner-role
+  apiGroup: rbac.authorization.k8s.io

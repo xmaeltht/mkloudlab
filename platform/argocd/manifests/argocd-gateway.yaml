@@ -1,0 +1,22 @@
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: argocd-gateway
+  namespace: argocd
+spec:
+  gatewayClassName: istio
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      hostname: "argocd.maelkloud.com"
+    - name: https
+      port: 443
+      protocol: HTTPS
+      hostname: "argocd.maelkloud.com"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: argocd-cert
+            kind: Secret

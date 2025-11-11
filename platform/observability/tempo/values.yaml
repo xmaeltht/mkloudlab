@@ -1,0 +1,65 @@
+# Grafana Tempo Helm values tuned for single-cluster production-like usage
+
+tempo:
+  server:
+    logLevel: info
+  storage:
+    trace:
+      backend: filesystem
+      filesystem:
+        directory: /var/tempo/traces
+    wal:
+      enabled: true
+  auth_enabled: false
+
+ingester:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClassName: local-path
+
+compactor:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: local-path
+
+queryFrontend:
+  replicas: 1
+
+querier:
+  replicas: 1
+
+metricsGenerator:
+  enabled: false
+
+tempoGateway:
+  enabled: false
+
+serviceMonitor:
+  enabled: true
+
+traces:
+  jaeger:
+    thriftHttp:
+      enabled: false
+  zipkin:
+    enabled: false
+  otlp:
+    grpc:
+      enabled: true
+      receiverProtocol: grpc
+      listenAddress: 0.0.0.0
+    http:
+      enabled: true
+      listenAddress: 0.0.0.0
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 1Gi
+

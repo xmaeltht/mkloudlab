@@ -1,0 +1,24 @@
+# Security Configuration Application
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: security-config
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/xmaeltht/mkloudlab.git"
+    path: platform/security
+    targetRevision: HEAD
+  destination:
+    server: "https://kubernetes.default.svc"
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true

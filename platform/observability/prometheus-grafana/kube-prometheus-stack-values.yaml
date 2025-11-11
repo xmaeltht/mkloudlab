@@ -1,0 +1,37 @@
+# Helm values override for kube-prometheus-stack
+# Use this file if deploying kube-prometheus-stack via Helm
+# This ensures proper storageClass configuration for all components
+#
+# Usage:
+#   helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#     -n monitoring \
+#     -f kube-prometheus-stack-values.yaml
+
+prometheus:
+  prometheusSpec:
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 5Gi
+
+grafana:
+  persistence:
+    enabled: true
+    storageClassName: local-path
+    size: 1Gi
+

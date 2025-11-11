@@ -1,0 +1,16 @@
+# Kustomization file for Prometheus/Grafana monitoring stack
+# This ensures all resources are properly configured with storageClass
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - prometheus_grafana.yaml
+  - grafana-app.yaml
+  - certificates.yaml
+  - service-monitors.yaml
+  - prometheus-crd.yaml
+  - alertmanager-crd.yaml
+  - grafana-pvc.yaml
+
+namespace: monitoring
+

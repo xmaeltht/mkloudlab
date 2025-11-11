@@ -1,0 +1,187 @@
+version: "3"
+
+vars:
+  VM_MEMORY: 2048
+  VM_CPUS: 2
+
+tasks:
+  default:
+    desc: Show Vagrant tasks
+    cmds:
+      - task --list
+
+  # =============================================================================
+  # CLUSTER PROVISIONING
+  # =============================================================================
+
+  up:
+    desc: Start the Vagrant Kubernetes cluster
+    cmds:
+      - vagrant up
+      - echo "Setting up kubeconfig..."
+      - task: kubeconfig
+      - echo "Waiting for cluster to be ready..."
+      - task: wait-ready
+
+  provision:
+    desc: Re-run provisioning on existing VMs
+    cmds:
+      - vagrant provision
+
+  wait-ready:
+    desc: Wait for Kubernetes cluster to be ready
+    cmds:
+      - |
+        echo "Waiting for cluster to be ready..."
+        timeout=60
+        while ! kubectl cluster-info >/dev/null 2>&1; do
+          echo "Waiting for cluster..."
+          sleep 10
+          timeout=$((timeout-10))
+          if [ $timeout -le 0 ]; then
+            echo "Timeout waiting for cluster"
+            exit 1
+          fi
+        done
+        echo "Cluster is ready!"
+
+  # =============================================================================
+  # CLUSTER OPERATIONS
+  # =============================================================================
+
+  status:
+    desc: Show status of Vagrant VMs and cluster
+    cmds:
+      - echo "=== Vagrant VM Status ==="
+      - vagrant status
+      - echo -e "\n=== Kubernetes Cluster Info ==="
+      - kubectl cluster-info 2>/dev/null || echo "Cluster not accessible"
+      - echo -e "\n=== Node Status ==="
+      - kubectl get nodes 2>/dev/null || echo "Nodes not accessible"
+
+  ssh:
+    desc: SSH into the control plane node
+    cmds:
+      - vagrant ssh kcontroller
+
+  ssh-worker:
+    desc: SSH into a worker node
+    vars:
+      WORKER: '{{.CLI_ARGS | default "knode1"}}'
+    cmds:
+      - vagrant ssh {{.WORKER}}
+
+  kubeconfig:
+    desc: Copy kubeconfig from control plane
+    cmds:
+      - |
+        echo "Copying kubeconfig from control plane..."
+        mkdir -p ~/.kube
+        vagrant ssh kcontroller -c "sudo cat /etc/kubernetes/admin.conf" > ~/.kube/config
+        # Update server address to use localhost with port forwarding
+        sed -i.bak 's/172.16.16.100:6443/localhost:6443/g' ~/.kube/config
+        # Remove certificate-authority-data lines
+        sed -i.bak2 '/certificate-authority-data:/d' ~/.kube/config
+        sed -i.bak3 '/certificate-authority-data/d' ~/.kube/config
+        # Add insecure-skip-tls-verify after server line
+        awk '/server: https:\/\/localhost:6443/ { print; print "    insecure-skip-tls-verify: true"; next } 1' ~/.kube/config > ~/.kube/config.tmp && mv ~/.kube/config.tmp ~/.kube/config
+        chmod 600 ~/.kube/config
+        echo "✅ Kubeconfig saved to ~/.kube/config"
+        echo "You can now use kubectl commands to interact with your cluster"
+
+  kubeconfig:script:
+    desc: Copy kubeconfig using setup script
+    cmds:
+      - chmod +x setup-kubeconfig.sh
+      - ./setup-kubeconfig.sh
+
+  # =============================================================================
+  # CLEANUP & RESET
+  # =============================================================================
+
+  halt:
+    desc: Stop all Vagrant VMs
+    cmds:
+      - vagrant halt
+
+  destroy:
+    desc: Destroy all Vagrant VMs
+    prompt: This will destroy all Vagrant VMs and data. Continue?
+    cmds:
+      - vagrant destroy -f
+
+  clean:
+    desc: Clean up Vagrant and VM artifacts
+    prompt: This will remove all Vagrant boxes and data. Continue?
+    cmds:
+      - vagrant destroy -f
+      - vagrant box prune -f
+      - rm -rf .vagrant/
+
+  restart:
+    desc: Restart the cluster (halt + up)
+    cmds:
+      - task: halt
+      - sleep 5
+      - task: up
+
+  reload:
+    desc: Reload cluster with updated bootstrap scripts (provision existing VMs)
+    cmds:
+      - echo "Reloading cluster with updated bootstrap scripts..."
+      - vagrant provision
+      - echo "✅ Cluster reloaded with updated bootstrap scripts"
+
+  # =============================================================================
+  # DEBUGGING & TROUBLESHOOTING
+  # =============================================================================
+
+  logs:
+    desc: View logs from bootstrap scripts
+    cmds:
+      - echo "=== Control Plane Bootstrap Log ==="
+      - vagrant ssh kcontroller -c "sudo journalctl -u kubelet --no-pager -l" || true
+      - echo -e "\n=== Worker Node Bootstrap Log ==="
+      - vagrant ssh knode1 -c "sudo journalctl -u kubelet --no-pager -l" || true
+
+  debug:
+    desc: Collect debugging information
+    cmds:
+      - echo "=== Vagrant Status ==="
+      - vagrant status
+      - echo -e "\n=== VM Resources ==="
+      - vagrant ssh kcontroller -c "free -h && df -h" 2>/dev/null || true
+      - echo -e "\n=== Kubernetes Cluster State ==="
+      - kubectl get nodes -o wide 2>/dev/null || echo "Cluster not accessible"
+      - kubectl get pods -A 2>/dev/null || echo "Pods not accessible"
+
+  # =============================================================================
+  # UTILITIES
+  # =============================================================================
+
+  backup:
+    desc: Backup cluster configuration
+    cmds:
+      - mkdir -p backups/vagrant-$(date +%Y%m%d-%H%M%S)
+      - vagrant ssh kcontroller -c "sudo tar -czf /tmp/k8s-backup.tar.gz /etc/kubernetes /var/lib/etcd" 2>/dev/null || true
+      - vagrant ssh kcontroller -c "sudo cp /tmp/k8s-backup.tar.gz /vagrant/" 2>/dev/null || true
+      - mv k8s-backup.tar.gz backups/vagrant-$(date +%Y%m%d-%H%M%S)/ 2>/dev/null || true
+      - echo "Backup completed (if successful)"
+
+  resize:
+    desc: Resize VM resources (requires restart)
+    vars:
+      MEMORY: "{{.CLI_ARGS | default .VM_MEMORY}}"
+      CPUS: "{{.CLI_ARGS | default .VM_CPUS}}"
+    prompt: This will halt and restart VMs with new resource allocation. Continue?
+    cmds:
+      - echo "Setting VM resources to {{.MEMORY}}MB RAM, {{.CPUS}} CPUs"
+      - task: halt
+      - echo "Edit Vagrantfile to set new resources, then run 'task up'"
+
+  ip:
+    desc: Show IP addresses of cluster nodes
+    cmds:
+      - |
+        echo "=== Cluster Node IPs ==="
+        kubectl get nodes -o wide --no-headers 2>/dev/null | awk '{print $1 ": " $6}' || echo "Cluster not accessible"

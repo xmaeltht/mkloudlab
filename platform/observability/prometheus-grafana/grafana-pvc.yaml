@@ -1,0 +1,18 @@
+# Grafana PersistentVolumeClaim
+# This PVC is required for Grafana to persist its data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube-prometheus-stack-grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: kube-prometheus-stack
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+

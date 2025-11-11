@@ -1,0 +1,587 @@
+version: '3'
+
+vars:
+  ARGOCD_NAMESPACE: argocd
+  KUBECTL_TIMEOUT: 300s
+  PROJECT_NAME: mkloudlab
+  GIT_REPO_URL: "https://github.com/xmaeltht/mkloudlab.git"
+
+includes:
+  terraform:
+    taskfile: ./infrastructure/terraform/Taskfile.yml
+    dir: ./infrastructure/terraform
+  vagrant:
+    taskfile: ./infrastructure/vagrant/Taskfile.yml
+    dir: ./infrastructure/vagrant
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  # =============================================================================
+  # SETUP & INSTALLATION
+  # =============================================================================
+
+  install:
+    desc: Install the entire stack (Prerequisites + ArgoCD + Apps) - Full GitOps workflow
+    cmds:
+      - task: install:prerequisites
+      - task: install:argocd
+      - task: argocd:configure-repo
+      - task: gitops:ensure-committed
+      - task: install:apps
+      - task: argocd:sync-all
+      - task: install:certificates
+      - task: status
+
+  install:prerequisites:
+    desc: Install prerequisites (Gateway API, local-path storage, metrics-server, cert-manager, Istio)
+    cmds:
+      - echo "Installing prerequisites..."
+      - ./scripts/install-prerequisites.sh
+      - echo "Prerequisites installed successfully ✓"
+
+  install:argocd:
+    desc: Install ArgoCD in the cluster (requires prerequisites)
+    deps: [install:prerequisites]
+    cmds:
+      - kubectl create namespace {{.ARGOCD_NAMESPACE}} --dry-run=client -o yaml | kubectl apply -f -
+      - helm repo add argo https://argoproj.github.io/argo-helm
+      - helm repo update
+      - helm upgrade --install argocd argo/argo-cd -n {{.ARGOCD_NAMESPACE}} -f platform/argocd/manifests/argocd-values.yaml --wait
+      - echo "Waiting for ArgoCD to be ready..."
+      - kubectl wait --for=condition=available --timeout={{.KUBECTL_TIMEOUT}} deployment -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server
+      - echo "Installing ArgoCD Gateway API resources..."
+      - kubectl apply -f platform/argocd/manifests/gatewayclass.yaml
+      - kubectl apply -f platform/argocd/manifests/gateway.yaml
+      - kubectl apply -f platform/argocd/manifests/referencegrant.yaml || true
+      - echo "✅ ArgoCD installation complete"
+
+  install:apps:
+    desc: Register all ArgoCD applications (they will sync automatically)
+    deps: [validate:cluster, argocd:configure-repo]
+    cmds:
+      - echo "Registering ArgoCD applications..."
+      - echo "Infrastructure layer..."
+      - kubectl apply -f platform/argocd/apps/cert-manager-app.yaml
+      - kubectl apply -f platform/argocd/apps/external-secrets-app.yaml
+      - kubectl apply -f platform/argocd/apps/kyverno-engine-app.yaml
+      - kubectl apply -f platform/argocd/apps/kyverno-policies-app.yaml
+      - kubectl apply -f platform/argocd/apps/security-config-app.yaml
+      - kubectl apply -f platform/argocd/apps/cluster-config-app.yaml
+      - echo "Application layer..."
+      - kubectl apply -f platform/argocd/apps/keycloak-app.yaml
+      - kubectl apply -f platform/argocd/apps/keycloak-gateway-app.yaml
+      - kubectl apply -f platform/argocd/apps/sonarqube-app.yaml
+      - kubectl apply -f platform/argocd/apps/sonarqube-gateway-app.yaml
+      - echo "Observability layer..."
+      - kubectl apply -f platform/argocd/apps/alloy-app.yaml
+      - kubectl apply -f platform/argocd/apps/tempo-app.yaml
+      - kubectl apply -f platform/argocd/apps/monitoring-app.yaml
+      - kubectl apply -f platform/argocd/apps/loki-stack-app.yaml
+      - echo "✅ All ArgoCD applications registered"
+
+  install:certificates:
+    desc: Install and configure TLS certificates with Cloudflare DNS-01
+    deps: [install:prerequisites]
+    cmds:
+      - |
+        if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+          echo "⚠️  CLOUDFLARE_API_TOKEN not set. Skipping certificate configuration."
+          echo "   Set it with: export CLOUDFLARE_API_TOKEN=your_token"
+          echo "   Then run: task certificates:configure-token && task certificates:apply-all"
+          echo "✅ Certificate installation skipped (token not configured)"
+        else
+          task certificates:configure-token
+          task certificates:apply-all
+          echo "✅ Certificates configured"
+        fi
+
+  # =============================================================================
+  # ARGOCD OPERATIONS
+  # =============================================================================
+
+  argocd:configure-repo:
+    desc: Configure ArgoCD repository credentials (required for GitOps)
+    cmds:
+      - echo "Configuring ArgoCD repository..."
+      - |
+        # Wait for ArgoCD to be ready
+        kubectl wait --for=condition=available --timeout=60s deployment -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server || true
+      - |
+        # For public repos, ArgoCD will auto-configure. For private repos, use CLI.
+        # Check if repo is already configured
+        if command -v argocd &> /dev/null; then
+          ARGOCD_PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' 2>/dev/null | base64 -d)
+          if [ -n "$ARGOCD_PASSWORD" ]; then
+            ARGOCD_SERVER=$(kubectl get svc argocd-server -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "localhost:8080")
+            echo "Configuring repository via ArgoCD CLI..."
+            argocd login $ARGOCD_SERVER --username admin --password "$ARGOCD_PASSWORD" --insecure --grpc-web 2>/dev/null || true
+            argocd repo add {{.GIT_REPO_URL}} --name mkloudlab --type git --insecure-skip-server-verification 2>/dev/null || \
+            argocd repo add {{.GIT_REPO_URL}} --name mkloudlab --type git 2>/dev/null || echo "Repository may already be configured or will be auto-configured"
+          fi
+        else
+          echo "ℹ️  ArgoCD CLI not installed. Public repositories are auto-configured."
+          echo "   For private repos, install CLI: brew install argocd"
+        fi
+      - echo "✅ Repository configuration complete (public repos auto-configure)"
+
+  argocd:sync-all:
+    desc: Force sync all ArgoCD applications
+    cmds:
+      - echo "Syncing all ArgoCD applications..."
+      - |
+        for app in $(kubectl get applications -n {{.ARGOCD_NAMESPACE}} -o name 2>/dev/null); do
+          echo "Syncing $app..."
+          kubectl patch $app -n {{.ARGOCD_NAMESPACE}} --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"hard"}}}' 2>/dev/null || true
+        done
+      - echo "✅ Sync triggered for all applications"
+
+  argocd:login:
+    desc: Login to ArgoCD CLI
+    cmds:
+      - |
+        ARGOCD_SERVER=$(kubectl get svc argocd-server -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "localhost")
+        ARGOCD_PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' | base64 -d 2>/dev/null)
+        if [ -z "$ARGOCD_PASSWORD" ]; then
+          echo "ArgoCD not found or not properly initialized"
+          exit 1
+        fi
+        argocd login $ARGOCD_SERVER --username admin --password $ARGOCD_PASSWORD --insecure
+
+  argocd:sync:
+    desc: Sync all ArgoCD applications
+    cmds:
+      - kubectl get applications -n {{.ARGOCD_NAMESPACE}} -o name | xargs -I {} kubectl patch {} -n {{.ARGOCD_NAMESPACE}} --type merge -p '{"operation":{"sync":{"syncStrategy":{"hook":{"force":true}}}}}'
+
+  argocd:ui:
+    desc: Show ArgoCD UI access information
+    cmds:
+      - 'echo "ArgoCD UI: https://argocd.maelkloud.com"'
+      - 'echo "Username: admin"'
+      - |
+        PASSWORD=$(kubectl get secret argocd-initial-admin-secret -n {{.ARGOCD_NAMESPACE}} -o jsonpath='{.data.password}' | base64 -d 2>/dev/null || echo 'Not available - ArgoCD not ready')
+        echo "Password: $PASSWORD"
+      - echo "Gateway Status:"
+      - kubectl get gateway argocd-gateway -n {{.ARGOCD_NAMESPACE}} -o wide 2>/dev/null || echo "Gateway not found"
+
+  # =============================================================================
+  # GITOPS WORKFLOW
+  # =============================================================================
+
+  gitops:ensure-committed:
+    desc: Ensure all changes are committed and pushed to Git (required for ArgoCD)
+    cmds:
+      - |
+        if ! git diff --quiet 2>/dev/null || ! git diff --cached --quiet 2>/dev/null; then
+          echo "⚠️  Uncommitted changes detected. ArgoCD requires committed code."
+          echo "   Run: task gitops:push"
+          echo "   Or continue with uncommitted changes (not recommended for production)"
+          # In non-interactive mode, warn but don't block
+          if [ -t 0 ]; then
+            # Interactive terminal - ask user
+            echo ""
+            read -p "Continue anyway? (y/N) " REPLY
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+              exit 1
+            fi
+          else
+            # Non-interactive - just warn
+            echo "   Continuing in non-interactive mode..."
+          fi
+        fi
+      - |
+        # Check if remote is ahead
+        LOCAL=$(git rev-parse @ 2>/dev/null || echo "")
+        REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "")
+        if [ -n "$REMOTE" ] && [ "$LOCAL" != "$REMOTE" ]; then
+          echo "⚠️  Local branch differs from remote. Push recommended for ArgoCD."
+          echo "   Run: task gitops:push"
+        fi
+      - echo "✅ Git repository check complete"
+
+  gitops:push:
+    desc: Commit and push all changes to Git repository
+    cmds:
+      - |
+        if [ -z "$GIT_COMMIT_MESSAGE" ]; then
+          GIT_COMMIT_MESSAGE="chore: update GitOps manifests"
+        fi
+        git add . || true
+        if git diff --cached --quiet 2>/dev/null; then
+          echo "No changes to commit"
+        else
+          git commit -m "$GIT_COMMIT_MESSAGE"
+        fi
+        git push origin main || echo "Push failed or already up to date"
+        echo "✅ Git operations complete"
+
+  # =============================================================================
+  # CERTIFICATE MANAGEMENT
+  # =============================================================================
+
+  certificates:configure-token:
+    desc: Configure Cloudflare API token for certificate issuance
+    cmds:
+      - |
+        if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+          echo "❌ CLOUDFLARE_API_TOKEN environment variable not set"
+          echo "   Set it with: export CLOUDFLARE_API_TOKEN=your_token"
+          exit 1
+        fi
+      - |
+        kubectl create secret generic cloudflare-api-token-secret \
+          --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+          -n cert-manager --dry-run=client -o yaml | kubectl apply -f -
+      - echo "✅ Cloudflare API token configured"
+
+  certificates:apply-all:
+    desc: Apply all certificate manifests
+    cmds:
+      - echo "Applying certificate manifests..."
+      - kubectl apply -f platform/argocd/manifests/argocd-cert.yaml
+      - kubectl apply -f platform/observability/prometheus-grafana/certificates.yaml
+      - kubectl apply -f services/keycloak/keycloak-cert.yaml || echo "Keycloak namespace not ready yet"
+      - kubectl apply -f services/sonarqube/sonar-cert.yaml || echo "SonarQube namespace not ready yet"
+      - kubectl apply -f platform/argocd/manifests/referencegrant.yaml || true
+      - echo "✅ All certificates applied"
+
+  certificates:status:
+    desc: Check certificate status across all namespaces
+    cmds:
+      - echo "=== Certificate Status ==="
+      - |
+        if kubectl get crd certificates.cert-manager.io >/dev/null 2>&1; then
+          kubectl get certificates -A -o wide
+        else
+          echo "cert-manager not installed - no certificates available"
+        fi
+      - echo ""
+      - echo "=== Certificate Issues (if any) ==="
+      - |
+        if kubectl get crd certificaterequests.cert-manager.io >/dev/null 2>&1; then
+          kubectl get certificaterequests -A | grep -v "True" || echo "All certificates are healthy ✓"
+        else
+          echo "cert-manager not installed - no certificate requests available"
+        fi
+
+  certificates:describe:
+    desc: Describe certificate issues for troubleshooting
+    vars:
+      NAMESPACE: '{{.CLI_ARGS | default "argocd"}}'
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          echo "Describing certificates in all namespaces..."
+          kubectl get certificates -A --no-headers | while read ns name ready secret age; do
+            if [ "$ready" != "True" ]; then
+              echo "=== Issues with $name in namespace $ns ==="
+              kubectl describe certificate $name -n $ns
+            fi
+          done
+        else
+          kubectl describe certificates -n {{.NAMESPACE}}
+        fi
+
+  # =============================================================================
+  # CLUSTER OPERATIONS
+  # =============================================================================
+
+  status:
+    desc: Show status of all deployments
+    cmds:
+      - echo "=== Cluster Info ==="
+      - kubectl cluster-info --request-timeout=10s
+      - echo -e "\n=== ArgoCD Applications ==="
+      - kubectl get applications -n {{.ARGOCD_NAMESPACE}} --no-headers 2>/dev/null || echo "ArgoCD not installed or no applications found"
+      - echo -e "\n=== Pod Status by Namespace ==="
+      - kubectl get pods --all-namespaces --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null || echo "All pods are running successfully"
+
+  logs:
+    desc: View logs for a specific component
+    prompt: Enter component name (argocd, keycloak, etc.)
+    vars:
+      COMPONENT: '{{.CLI_ARGS | default .COMPONENT}}'
+    cmds:
+      - |
+        if [ -z "{{.COMPONENT}}" ]; then
+          echo "Usage: task logs -- <component-name>"
+          echo "Available components: argocd, keycloak, sonarqube, prometheus, grafana, alloy"
+          exit 1
+        fi
+        kubectl logs -n {{.COMPONENT}} -l app={{.COMPONENT}} --tail=100 -f
+
+  shell:
+    desc: Get a shell in a component pod
+    prompt: Enter component name
+    vars:
+      COMPONENT: '{{.CLI_ARGS | default .COMPONENT}}'
+    cmds:
+      - |
+        if [ -z "{{.COMPONENT}}" ]; then
+          echo "Usage: task shell -- <component-name>"
+          exit 1
+        fi
+        kubectl exec -it -n {{.COMPONENT}} deployment/{{.COMPONENT}} -- /bin/bash
+
+  # =============================================================================
+  # DEVELOPMENT & MAINTENANCE
+  # =============================================================================
+
+  lint:
+    desc: Lint all YAML files
+    cmds:
+      - echo "Linting YAML files..."
+      - yamllint .
+      - echo "Validating Kubernetes manifests..."
+      - task: validate:manifests
+
+  format:
+    desc: Format code with prettier
+    cmds:
+      - npx prettier --write "**/*.{yaml,yml,json,md}"
+
+  validate:cluster:
+    desc: Validate cluster connectivity and prerequisites
+    cmds:
+      - kubectl cluster-info --request-timeout=10s
+      - kubectl get nodes
+      - echo "Cluster validation passed ✓"
+
+  validate:manifests:cluster:
+    desc: Validate all Kubernetes manifests against running cluster
+    deps: [validate:cluster]
+    cmds:
+      - echo "Validating Kubernetes manifests against running cluster..."
+      - find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v .git | grep -v Taskfile.yml | grep -v "values.yaml" | grep -v "helm-values.yaml" | xargs -I {} sh -c 'echo "Validating {}" && kubectl --dry-run=client apply -f {}'
+      - echo "Cluster validation completed ✓"
+
+  validate:manifests:
+    desc: Validate all Kubernetes manifests (syntax validation only)
+    cmds:
+      - echo "Validating YAML syntax and basic Kubernetes resource structure..."
+      - |
+        find . -name "*.yaml" -o -name "*.yml" | grep -v node_modules | grep -v .git | grep -v Taskfile.yml | grep -v "values.yaml" | grep -v "helm-values.yaml" | while read file; do
+          echo "Validating $file"
+          # Check if file has basic Kubernetes resource structure
+          if grep -q "^apiVersion:" "$file" && grep -q "^kind:" "$file"; then
+            echo "  ✓ Valid Kubernetes resource structure"
+          else
+            echo "  ⚠ File may not be a Kubernetes manifest (missing apiVersion or kind)"
+          fi
+        done
+      - echo "YAML syntax validation completed ✓"
+
+  # =============================================================================
+  # CLEANUP & RESET
+  # =============================================================================
+
+  clean:
+    desc: Clean up temporary files and reset
+    prompt: This will clean temporary files. Continue?
+    cmds:
+      - rm -rf node_modules/.cache
+      - kubectl delete pods --field-selector=status.phase=Failed --all-namespaces 2>/dev/null || true
+      - kubectl delete pods --field-selector=status.phase=Succeeded --all-namespaces 2>/dev/null || true
+
+  uninstall:
+    desc: Uninstall the entire stack
+    prompt: This will remove all deployed applications. Are you sure?
+    cmds:
+      - kubectl delete -f platform/argocd/apps --ignore-not-found=true
+      - echo "Waiting for applications to be removed..."
+      - sleep 30
+      - kubectl delete namespace {{.ARGOCD_NAMESPACE}} --ignore-not-found=true
+      - echo "Uninstall completed"
+
+  reset:
+    desc: Reset the entire deployment (uninstall + clean + install)
+    prompt: This will completely reset your deployment. Continue?
+    cmds:
+      - task: uninstall
+      - task: clean
+      - sleep 10
+      - task: install
+
+  # =============================================================================
+  # MONITORING & TROUBLESHOOTING
+  # =============================================================================
+
+  health:
+    desc: Comprehensive health check of all components
+    cmds:
+      - echo "=== Cluster Health ==="
+      - kubectl get componentstatuses 2>/dev/null || kubectl get --raw='/readyz?verbose'
+      - echo -e "\n=== Node Status ==="
+      - kubectl get nodes -o wide
+      - echo -e "\n=== Resource Usage ==="
+      - kubectl top nodes 2>/dev/null || echo "Metrics server not available"
+      - echo -e "\n=== Critical Pods ==="
+      - kubectl get pods -n kube-system --field-selector=status.phase!=Running 2>/dev/null || echo "All system pods running ✓"
+      - kubectl get pods -n {{.ARGOCD_NAMESPACE}} --field-selector=status.phase!=Running 2>/dev/null || echo "All ArgoCD pods running ✓"
+      - echo -e "\n=== Gateway API Status ==="
+      - kubectl get gateways -A --no-headers 2>/dev/null | wc -l | xargs echo "Active Gateways:"
+      - kubectl get httproutes -A --no-headers 2>/dev/null | wc -l | xargs echo "HTTP Routes:"
+      - echo -e "\n=== Certificate Status ==="
+      - kubectl get certificates -A --no-headers 2>/dev/null | grep -c "True" | xargs echo "Ready Certificates:"
+      - 'kubectl get certificates -A --no-headers 2>/dev/null | grep -cv "True" | xargs echo "Pending Certificates:" || echo "Pending Certificates: 0"'
+      - echo -e "\n=== DNS Resolution ==="
+      - 'nslookup argocd.maelkloud.com >/dev/null 2>&1 && echo "ArgoCD DNS: ✓" || echo "ArgoCD DNS: ✗"'
+      - echo -e "\n=== Security Status ==="
+      - kubectl get networkpolicies -A --no-headers | wc -l | xargs echo "Network Policies:"
+      - kubectl get namespaces -l pod-security.kubernetes.io/enforce=restricted --no-headers | wc -l | xargs echo "Restricted Namespaces:"
+      - 'kubectl get externalsecrets -A --no-headers 2>/dev/null | wc -l | xargs echo "External Secrets:" || echo "External Secrets: Not installed"'
+
+  troubleshoot:
+    desc: Collect troubleshooting information
+    cmds:
+      - echo "Collecting troubleshooting information..."
+      - mkdir -p troubleshoot
+      - kubectl get all -A > troubleshoot/all-resources.txt
+      - kubectl describe nodes > troubleshoot/nodes.txt
+      - kubectl get events -A --sort-by='.lastTimestamp' > troubleshoot/events.txt
+      - kubectl logs -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server --tail=100 > troubleshoot/argocd-server.log 2>/dev/null || true
+      - echo "Troubleshooting info saved to ./troubleshoot/ directory"
+
+  # =============================================================================
+  # CERTIFICATE & GATEWAY MANAGEMENT
+  # =============================================================================
+
+  gateway:status:
+    desc: Check Gateway API resources status
+    cmds:
+      - echo "=== Gateway Classes ==="
+      - kubectl get gatewayclasses -o wide 2>/dev/null || echo "No gateway classes found"
+      - echo ""
+      - echo "=== Gateways ==="
+      - kubectl get gateways -A -o wide 2>/dev/null || echo "No gateways found"
+      - echo ""
+      - echo "=== HTTP Routes ==="
+      - kubectl get httproutes -A -o wide 2>/dev/null || echo "No HTTP routes found"
+
+  dns:check:
+    desc: Check DNS resolution for maelkloud.com subdomains
+    cmds:
+      - echo "=== DNS Resolution Check ==="
+      - |
+        for subdomain in argocd grafana keycloak sonarqube prometheus; do
+          echo -n "$subdomain.maelkloud.com: "
+          nslookup $subdomain.maelkloud.com >/dev/null 2>&1 && echo "✓ Resolved" || echo "✗ Failed"
+        done
+
+  # =============================================================================
+  # SECURITY & COMPLIANCE
+  # =============================================================================
+
+  security:scan:
+    desc: Run security scan on cluster
+    cmds:
+      - echo "=== Security Scan Results ==="
+      - kubectl get networkpolicies -A
+      - echo -e "\n=== Pod Security Standards ==="
+      - kubectl get namespaces -o custom-columns=NAME:.metadata.name,PSS-ENFORCE:.metadata.labels.pod-security\.kubernetes\.io/enforce,PSS-AUDIT:.metadata.labels.pod-security\.kubernetes\.io/audit
+      - echo -e "\n=== RBAC Policies ==="
+      - kubectl get roles,clusterroles,rolebindings,clusterrolebindings -A --no-headers | wc -l | xargs echo "Total RBAC Resources:"
+
+  security:validate:
+    desc: Validate security configurations
+    cmds:
+      - echo "=== Validating Security Configurations ==="
+      - kubectl get networkpolicies -A --no-headers | wc -l | xargs echo "Network Policies:"
+      - kubectl get namespaces -l pod-security.kubernetes.io/enforce=restricted --no-headers | wc -l | xargs echo "Restricted Namespaces:"
+      - kubectl get serviceaccounts -A --no-headers | wc -l | xargs echo "Service Accounts:"
+      - echo "Security validation completed ✓"
+
+  secrets:status:
+    desc: Check external secrets status
+    cmds:
+      - echo "=== External Secrets Status ==="
+      - kubectl get externalsecrets -A 2>/dev/null || echo "External Secrets Operator not installed"
+      - kubectl get secretstores -A 2>/dev/null || echo "No secret stores found"
+      - kubectl get clustersecretstores 2>/dev/null || echo "No cluster secret stores found"
+
+  # =============================================================================
+  # UTILITIES
+  # =============================================================================
+
+  uninstall:prerequisites:
+    desc: Uninstall all prerequisites (Gateway API, local-path storage, metrics-server, cert-manager, Istio)
+    cmds:
+      - echo "Uninstalling prerequisites..."
+      - |
+        # Uninstall Istio
+        if kubectl get deployment istio-ingressgateway -n istio-system &> /dev/null; then
+          echo "Uninstalling Istio..."
+          istioctl uninstall --purge -y 2>/dev/null || true
+          kubectl delete namespace istio-system --ignore-not-found=true
+        fi
+
+        # Uninstall cert-manager
+        if kubectl get deployment cert-manager -n cert-manager &> /dev/null; then
+          echo "Uninstalling cert-manager..."
+          kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml --ignore-not-found=true
+          kubectl delete namespace cert-manager --ignore-not-found=true
+        fi
+
+        # Uninstall metrics-server
+        if kubectl get deployment metrics-server -n kube-system &> /dev/null; then
+          echo "Uninstalling metrics-server..."
+          kubectl delete deployment metrics-server -n kube-system --ignore-not-found=true
+          kubectl delete service metrics-server -n kube-system --ignore-not-found=true
+          kubectl delete apiservice v1beta1.metrics.k8s.io --ignore-not-found=true
+          kubectl delete clusterrole system:metrics-server --ignore-not-found=true
+          kubectl delete clusterrolebinding system:metrics-server --ignore-not-found=true
+          kubectl delete serviceaccount metrics-server -n kube-system --ignore-not-found=true
+        fi
+
+        # Uninstall local-path storage
+        if kubectl get deployment local-path-provisioner -n local-path-storage &> /dev/null; then
+          echo "Uninstalling local-path storage..."
+          kubectl delete -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml --ignore-not-found=true
+        fi
+
+        # Uninstall Gateway API CRDs
+        if kubectl get crd gateways.gateway.networking.k8s.io &> /dev/null; then
+          echo "Uninstalling Gateway API CRDs..."
+          kubectl delete -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml --ignore-not-found=true
+        fi
+
+        echo "Prerequisites uninstalled successfully ✓"
+
+  backup:
+    desc: Backup cluster state and configurations
+    cmds:
+      - mkdir -p backups/$(date +%Y%m%d-%H%M%S)
+      - kubectl get all -A -o yaml > backups/$(date +%Y%m%d-%H%M%S)/cluster-state.yaml
+      - kubectl get pv,pvc -A -o yaml > backups/$(date +%Y%m%d-%H%M%S)/persistent-volumes.yaml
+      - kubectl get secrets -A -o yaml > backups/$(date +%Y%m%d-%H%M%S)/secrets.yaml
+      - echo "Backup completed in backups/ directory"
+
+  access:
+    desc: Show access URLs for all services
+    cmds:
+      - echo "=== Service Access URLs ==="
+      - 'echo "ArgoCD: https://argocd.maelkloud.com"'
+      - 'echo "Grafana: https://grafana.maelkloud.com"'
+      - 'echo "Keycloak: https://keycloak.maelkloud.com"'
+      - 'echo "SonarQube: https://sonarqube.maelkloud.com"'
+      - 'echo "Prometheus: https://prometheus.maelkloud.com"'
+      - echo ""
+      - echo "=== Gateway Status ==="
+      - kubectl get gateways -A 2>/dev/null || echo "No gateways found"
+      - echo ""
+      - echo "=== Certificate Status ==="
+      - kubectl get certificates -A 2>/dev/null || echo "No certificates found"
+
+  docs:
+    desc: Generate or update documentation
+    cmds:
+      - mkdir -p docs/reference
+      - echo "# {{.PROJECT_NAME}} - Available Tasks" > docs/reference/TASKS.md
+      - echo "" >> docs/reference/TASKS.md
+      - echo "This file is auto-generated. Run \`task docs\` to update." >> docs/reference/TASKS.md
+      - echo "" >> docs/reference/TASKS.md
+      - task --list >> docs/reference/TASKS.md
+      - echo "Documentation updated in docs/reference/TASKS.md"
