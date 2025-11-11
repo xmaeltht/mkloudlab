@@ -1,0 +1,8 @@
+# Kustomization for SonarQube Gateway and Certificate
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - sonar-cert.yaml
+  - sonar.yaml
+
