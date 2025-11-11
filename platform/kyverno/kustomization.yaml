@@ -1,0 +1,13 @@
+# Kustomization for Kyverno Policies
+# Excludes non-Kubernetes resource files
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - policies/
+  - rbac/
+  - gateway-kyverno.yaml
+
+# Exclude Helm values and README files
+# Note: helm-values.yaml and README.md are not Kubernetes resources
+
