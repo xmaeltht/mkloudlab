@@ -30,17 +30,19 @@ spec:
       valuesKey: values.yaml
       optional: true
   values:
-    tempo:
-      server:
-        logLevel: info
-      storage:
-        trace:
-          backend: filesystem
-          filesystem:
-            directory: /var/tempo/traces
-        wal:
-          enabled: true
-      auth_enabled: false
+    # Tempo configuration for Helm chart v1.24.0
+    # Note: Configuration structure matches the Helm chart values schema
+    storage:
+      trace:
+        backend: local
+        local:
+          path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+    server:
+      http_listen_port: 3200
+      log_level: info
+    auth_enabled: false
     ingester:
       replicas: 1
       persistence:

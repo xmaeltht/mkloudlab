@@ -79,8 +79,8 @@ spec:
         runAsUser: 1000
       containers:
         - name: alloy
-          image: grafana/alloy:1.4.3
-          imagePullPolicy: IfNotPresent
+          image: grafana/alloy:latest
+          imagePullPolicy: Always
           args:
             - "-server.http.listen-address=0.0.0.0:12345"
             - "-config.file=/etc/alloy/alloy.river"
