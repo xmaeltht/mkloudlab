@@ -83,8 +83,8 @@ spec:
           imagePullPolicy: Always
           args:
             - "run"
-            - "-config.file=/etc/alloy/alloy.river"
-            - "-server.http.listen-address=0.0.0.0:12345"
+            - "--config.file=/etc/alloy/alloy.river"
+            - "--server.http.listen-address=0.0.0.0:12345"
           ports:
             - containerPort: 4317
               name: otlp-grpc
