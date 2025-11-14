@@ -12,7 +12,7 @@ spec:
     kind: GitRepository
     name: mkloudlab
     namespace: flux-system
-  # No targetNamespace - resources apply to their own namespaces
+  # targetNamespace removed - resources apply to their own namespaces
   wait: true
   timeout: 5m
 

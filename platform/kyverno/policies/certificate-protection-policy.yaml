@@ -30,7 +30,7 @@ spec:
         deny:
           conditions:
             all:
-              - key: "{{ request.object.metadata.annotations['cert-manager.io/allow-deletion'] }}"
+              - key: "{{ request.object.metadata.annotations.\"cert-manager.io/allow-deletion\" }}"
                 operator: NotEquals
                 value: "true"
 
