@@ -14,9 +14,23 @@ spec:
       labels:
         app: keycloak
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: keycloak
         image: quay.io/keycloak/keycloak:25.0.2
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          seccompProfile:
+            type: RuntimeDefault
         args:
         - start
         - --http-enabled=true
@@ -76,9 +90,23 @@ spec:
       labels:
         app: postgresql
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: postgresql
         image: postgres:15
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 999
+          seccompProfile:
+            type: RuntimeDefault
         ports:
         - containerPort: 5432
         env:

@@ -23,8 +23,8 @@ spec:
           - resources:
               kinds:
                 - Certificate
-              apiGroups:
-                - "cert-manager.io"
+              namespaces:
+                - "*"
       validate:
         message: "Certificate deletion is protected. To delete, add annotation 'cert-manager.io/allow-deletion: true'"
         deny:
