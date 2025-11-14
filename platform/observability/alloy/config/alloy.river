@@ -1,73 +1,63 @@
-# Grafana Alloy configuration for production telemetry pipelines
-# https://grafana.com/docs/alloy/latest/
+// Grafana Alloy configuration for production telemetry pipelines
+// https://grafana.com/docs/alloy/latest/
 
-# =============================
-# METRICS (Prometheus compatible)
-# =============================
-
-// Scrape Prometheus compatible endpoints (for legacy exporters)
-prometheus.scrape "kubernetes" {
-  targets = [
-    {
-      scheme = "http"
-      address = "kubernetes.default.svc.cluster.local"
-    },
-  ]
-  scrape_interval = "30s"
-}
+// =============================
+// METRICS (Prometheus compatible)
+// =============================
 
 // Receive OTLP metrics/logs from instrumented workloads
-otlp {
+otelcol.receiver.otlp "default" {
   grpc {
-    listen_address = "0.0.0.0:4317"
+    endpoint = "0.0.0.0:4317"
   }
   http {
-    listen_address = "0.0.0.0:4318"
+    endpoint = "0.0.0.0:4318"
   }
   output {
-    metrics = [prometheus.remote_write.metrics]
-    logs    = [loki.write_k8s.receiver]
-    traces  = [tempo.write_traces.receiver]
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.loki.default.input]
+    traces  = [otelcol.exporter.otlp.traces.input]
   }
 }
 
-// Remote write metrics into in-cluster Prometheus (optional fan-out)
+// Convert OTLP metrics to Prometheus format
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.metrics.receiver]
+}
+
+// Convert OTLP logs to Loki format
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.k8s.receiver]
+}
+
+// Remote write metrics into in-cluster Prometheus
 prometheus.remote_write "metrics" {
   endpoint {
     url = "http://prometheus-server.monitoring.svc.cluster.local:80/api/v1/write"
   }
-  queue_config {
-    capacity = 2000
-    max_shards = 10
-  }
 }
 
-# =============================
-# LOGS
-# =============================
-
-// Tail Kubernetes container logs
-kubernetes.events "cluster" {
-  job_name = "k8s-events"
-}
+// =============================
+// LOGS
+// =============================
 
 // Ship logs to Loki
 loki.write "k8s" {
   endpoint {
-    url = "http://loki-stack.logging.svc.cluster.local:3100/loki/api/v1/push"
+    url = "http://logging-loki-stack.logging.svc.cluster.local:3100/loki/api/v1/push"
   }
   external_labels = {
-    cluster = "mkloudlab"
+    cluster = "mkloudlab",
   }
 }
 
-# =============================
-# TRACES
-# =============================
+// =============================
+// TRACES
+// =============================
 
-tempo.write "traces" {
-  endpoint {
-    url = "tempo-tempo-distributor.observability.svc.cluster.local:4317"
+otelcol.exporter.otlp "traces" {
+  client {
+    endpoint = "observability-tempo.observability.svc.cluster.local:4317"
   }
 }
 

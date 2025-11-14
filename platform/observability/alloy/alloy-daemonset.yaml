@@ -81,10 +81,10 @@ spec:
         - name: alloy
           image: grafana/alloy:latest
           imagePullPolicy: Always
+          workingDir: /tmp/alloy-data
           args:
             - "run"
-            - "--config.file=/etc/alloy/alloy.river"
-            - "--server.http.listen-address=0.0.0.0:12345"
+            - "/etc/alloy/alloy.river"
           ports:
             - containerPort: 4317
               name: otlp-grpc
@@ -100,6 +100,8 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/alloy
+            - name: data
+              mountPath: /tmp/alloy-data
             - name: varlog
               mountPath: /var/log
               readOnly: true
@@ -126,6 +128,8 @@ spec:
         - name: config
           configMap:
             name: alloy-config
+        - name: data
+          emptyDir: {}
         - name: varlog
           hostPath:
             path: /var/log
