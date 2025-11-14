@@ -1,47 +1,5 @@
 # Comprehensive RBAC Policies for Enhanced Security
-
-# Service Account for ArgoCD operations
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: argocd-deployer
-  namespace: argocd
-  labels:
-    app.kubernetes.io/name: argocd
-    app.kubernetes.io/component: deployer
----
-# ClusterRole for ArgoCD (minimal permissions)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: argocd-deployer-role
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "services", "configmaps", "secrets", "namespaces"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["networking.k8s.io"]
-    resources: ["ingresses", "networkpolicies"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["gateway.networking.k8s.io"]
-    resources: ["gateways", "httproutes"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
----
-# ClusterRoleBinding for ArgoCD
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: argocd-deployer-binding
-subjects:
-  - kind: ServiceAccount
-    name: argocd-deployer
-    namespace: argocd
-roleRef:
-  kind: ClusterRole
-  name: argocd-deployer-role
-  apiGroup: rbac.authorization.k8s.io
+# Note: ArgoCD resources removed - using Flux for GitOps
 ---
 # Service Account for Monitoring operations
 apiVersion: v1
