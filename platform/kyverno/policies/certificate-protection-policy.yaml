@@ -27,13 +27,8 @@ spec:
                 - "*"
       validate:
         message: "Certificate deletion is protected. To delete, add annotation 'cert-manager.io/allow-deletion: true'"
-        deny:
-          conditions:
-            all:
-              - key: "{{ request.operation || 'DELETE' }}"
-                operator: Equals
-                value: "DELETE"
-              - key: "{{ request.object.metadata.annotations.\"cert-manager.io/allow-deletion\" || '' }}"
-                operator: NotEquals
-                value: "true"
+        pattern:
+          metadata:
+            annotations:
+              "cert-manager.io/allow-deletion": "true"
 
