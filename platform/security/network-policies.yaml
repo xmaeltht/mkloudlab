@@ -64,12 +64,46 @@ spec:
         - protocol: TCP
           port: 8080
   egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: postgresql
+      ports:
+        - protocol: TCP
+          port: 5432
     - to: []
       ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
           port: 80
+        - protocol: UDP
+          port: 53
+---
+# PostgreSQL network policy
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-netpol
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: keycloak
+      ports:
+        - protocol: TCP
+          port: 5432
+  egress:
+    - to: []
+      ports:
         - protocol: UDP
           port: 53
 ---

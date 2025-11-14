@@ -30,3 +30,5 @@ istio-*/
 
 # Troubleshooting output files
 troubleshoot/
+
+*.vagrant/
