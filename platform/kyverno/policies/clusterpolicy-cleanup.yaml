@@ -1,22 +1,24 @@
-apiVersion: kyverno.io/v2
-kind: ClusterCleanupPolicy
-metadata:
-  name: cleanup-deprecated-v1-endpoints
-  annotations:
-    policies.kyverno.io/title: Cleanup Deprecated Endpoints
-    policies.kyverno.io/description: |
-      This cleanup policy automatically deletes all v1/Endpoints resources.
-      v1/Endpoints is deprecated in Kubernetes v1.33+, and should be replaced
-      by EndpointSlices (discovery.k8s.io/v1).
-    policies.kyverno.io/category: Maintenance
-    policies.kyverno.io/severity: high
-spec:
-  match:
-    any:
-      - resources:
-          kinds:
-            - Endpoints
-  schedule: "0 */12 * * *" # Every 12 hours
+# ClusterCleanupPolicy disabled - cleanup controller lacks permissions to delete Endpoints
+# To enable, grant kyverno-cleanup-controller permission to delete Endpoints resources
+# apiVersion: kyverno.io/v2
+# kind: ClusterCleanupPolicy
+# metadata:
+#   name: cleanup-deprecated-v1-endpoints
+#   annotations:
+#     policies.kyverno.io/title: Cleanup Deprecated Endpoints
+#     policies.kyverno.io/description: |
+#       This cleanup policy automatically deletes all v1/Endpoints resources.
+#       v1/Endpoints is deprecated in Kubernetes v1.33+, and should be replaced
+#       by EndpointSlices (discovery.k8s.io/v1).
+#     policies.kyverno.io/category: Maintenance
+#     policies.kyverno.io/severity: high
+# spec:
+#   match:
+#     any:
+#       - resources:
+#           kinds:
+#             - Endpoints
+#   schedule: "0 */12 * * *" # Every 12 hours
 
 ---
 apiVersion: kyverno.io/v1
