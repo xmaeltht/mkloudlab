@@ -20,45 +20,45 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-      - name: keycloak
-        image: quay.io/keycloak/keycloak:25.0.2
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: true
-          runAsUser: 1000
-          seccompProfile:
-            type: RuntimeDefault
-        args:
-        - start
-        - --http-enabled=true
-        - --http-port=8080
-        - --hostname-strict=false
-        ports:
-        - containerPort: 8080
-        env:
-        - name: KC_DB
-          value: postgres
-        - name: KC_DB_URL
-          value: jdbc:postgresql://postgresql:5432/keycloak
-        - name: KC_DB_USERNAME
-          value: keycloak
-        - name: KC_DB_PASSWORD
-          value: Keycloak123!
-        - name: KEYCLOAK_ADMIN
-          value: admin
-        - name: KEYCLOAK_ADMIN_PASSWORD
-          value: Keycloak123!
-        readinessProbe:
-          httpGet:
-            path: /realms/master
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - start
+            - --http-enabled=true
+            - --http-port=8080
+            - --hostname-strict=false
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgresql:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: keycloak
+            - name: KC_DB_PASSWORD
+              value: Keycloak123!
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: Keycloak123!
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
 
 ---
 apiVersion: v1
@@ -70,9 +70,23 @@ spec:
   selector:
     app: keycloak
   ports:
-  - port: 8080
-    targetPort: 8080
+    - port: 8080
+      targetPort: 8080
   type: ClusterIP
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-pvc
+  namespace: keycloak
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path
 
 ---
 apiVersion: apps/v1
@@ -98,34 +112,34 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-      - name: postgresql
-        image: postgres:15
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: true
-          runAsUser: 999
-          runAsGroup: 999
-          seccompProfile:
-            type: RuntimeDefault
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_DB
-          value: keycloak
-        - name: POSTGRES_USER
-          value: keycloak
-        - name: POSTGRES_PASSWORD
-          value: Keycloak123!
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
+        - name: postgresql
+          image: postgres:15
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: keycloak
+            - name: POSTGRES_USER
+              value: keycloak
+            - name: POSTGRES_PASSWORD
+              value: Keycloak123!
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       volumes:
-      # Note: Using emptyDir with proper ownership handled by PostgreSQL image
-      - name: postgres-storage
-        emptyDir: {}
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgresql-pvc
 
 ---
 apiVersion: v1
@@ -137,6 +151,6 @@ spec:
   selector:
     app: postgresql
   ports:
-  - port: 5432
-    targetPort: 5432
+    - port: 5432
+      targetPort: 5432
   type: ClusterIP

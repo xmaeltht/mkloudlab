@@ -1,8 +1,8 @@
 # Kyverno policy to protect Certificate resources from accidental deletion
 # Certificates should only be deleted manually with explicit confirmation
 # Automatic deletions (e.g., by controllers, cleanup jobs) are blocked
-apiVersion: kyverno.io/v1
 kind: ClusterPolicy
+apiVersion: kyverno.io/v1
 metadata:
   name: protect-certificates
   annotations:
