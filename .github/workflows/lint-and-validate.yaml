@@ -40,12 +40,12 @@ jobs:
             ! -name "kube-prometheus-stack-values.yaml" \
             ! -name "*.river" \
             ! -path "*/templates/*" 2>/dev/null)
-          
+
           if [ -z "$MANIFESTS" ]; then
             echo "No manifests found to validate"
             exit 0
           fi
-          
+
           echo "$MANIFESTS" | xargs kubeconform -summary -output=text \
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
