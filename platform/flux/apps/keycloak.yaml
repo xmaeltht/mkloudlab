@@ -34,12 +34,23 @@ spec:
     # Replica count
     replicas: 1
 
-    # Keycloak Configuration - explicitly set extraEnv to empty string to avoid schema issues
-    extraEnv: ""
-
     # Disable built-in PostgreSQL (using Bitnami, which user doesn't want)
     postgresql:
       enabled: false
+
+    # Override database environment variables to use external PostgreSQL
+    # Note: extraEnv must be a YAML string that the chart will parse
+    extraEnv: |
+      - name: DB_ADDR
+        value: postgresql
+      - name: DB_USER
+        value: keycloak
+      - name: DB_PASSWORD
+        value: Keycloak123!
+      - name: DB_DATABASE
+        value: keycloak
+      - name: DB_VENDOR
+        value: postgres
 
     # Using args for Keycloak configuration
     command:
@@ -48,11 +59,6 @@ spec:
       - "start"
       - "--http-enabled=true"
       - "--hostname-strict=false"
-      - "--db=postgres"
-      - "--db-url-host=postgresql"
-      - "--db-url-database=keycloak"
-      - "--db-username=keycloak"
-      - "--db-password=Keycloak123!"
 
     # Service configuration
     service:
@@ -68,6 +74,10 @@ spec:
     securityContext:
       runAsUser: 1001
       runAsNonRoot: true
+
+    # Disable Istio sidecar injection (Istio proxy is failing startup probe)
+    podAnnotations:
+      sidecar.istio.io/inject: "false"
   targetNamespace: keycloak
   install:
     createNamespace: true

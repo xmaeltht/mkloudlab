@@ -13,6 +13,8 @@ spec:
     metadata:
       labels:
         app: keycloak
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -103,6 +105,8 @@ spec:
     metadata:
       labels:
         app: postgresql
+      annotations:
+        sidecar.istio.io/inject: "false"
     spec:
       securityContext:
         runAsNonRoot: true
