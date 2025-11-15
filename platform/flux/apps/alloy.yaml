@@ -30,11 +30,11 @@ spec:
   values:
     controller:
       type: daemonset
-    
+
     serviceAccount:
       create: true
       name: alloy
-    
+
     global:
       podSecurityContext:
         runAsNonRoot: true
@@ -42,7 +42,7 @@ spec:
         fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
-    
+
     alloy:
       securityContext:
         allowPrivilegeEscalation: false
@@ -50,17 +50,17 @@ spec:
           drop:
             - ALL
         readOnlyRootFilesystem: false
-      
+
       configMap:
         create: true
         content: |
           // Grafana Alloy configuration for production telemetry pipelines
           // https://grafana.com/docs/alloy/latest/
-          
+
           // =============================
           // METRICS (Prometheus compatible)
           // =============================
-          
+
           // Receive OTLP metrics/logs from instrumented workloads
           otelcol.receiver.otlp "default" {
             grpc {
@@ -75,28 +75,28 @@ spec:
               traces  = [otelcol.exporter.otlp.traces.input]
             }
           }
-          
+
           // Convert OTLP metrics to Prometheus format
           otelcol.exporter.prometheus "default" {
             forward_to = [prometheus.remote_write.metrics.receiver]
           }
-          
+
           // Convert OTLP logs to Loki format
           otelcol.exporter.loki "default" {
             forward_to = [loki.write.k8s.receiver]
           }
-          
+
           // Remote write metrics into in-cluster Prometheus
           prometheus.remote_write "metrics" {
             endpoint {
               url = "http://prometheus-server.monitoring.svc.cluster.local:80/api/v1/write"
             }
           }
-          
+
           // =============================
           // LOGS
           // =============================
-          
+
           // Ship logs to Loki
           loki.write "k8s" {
             endpoint {
@@ -106,23 +106,23 @@ spec:
               cluster = "mkloudlab",
             }
           }
-          
+
           // =============================
           // TRACES
           // =============================
-          
+
           otelcol.exporter.otlp "traces" {
             client {
               endpoint = "observability-tempo.observability.svc.cluster.local:4317"
             }
           }
-      
+
       storagePath: /tmp/alloy
       enableHttpServerPort: true
       listenAddr: 0.0.0.0
       listenPort: 12345
       initialDelaySeconds: 10
-      
+
       extraPorts:
         - name: otlp-grpc
           port: 4317
@@ -130,18 +130,18 @@ spec:
         - name: otlp-http
           port: 4318
           targetPort: 4318
-      
+
       extraEnv:
         - name: NODE_NAME
           valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
-    
+
     image:
       repository: grafana/alloy
       tag: null
       pullPolicy: IfNotPresent
-    
+
     resources:
       requests:
         cpu: 250m
@@ -149,18 +149,18 @@ spec:
       limits:
         cpu: 1000m
         memory: 1Gi
-    
+
     livenessProbe:
       httpGet:
         path: /-/healthy
         port: 12345
       initialDelaySeconds: 30
       periodSeconds: 30
-    
+
     service:
       enabled: true
       type: ClusterIP
-    
+
     rbac:
       create: true
       rules:
@@ -170,7 +170,7 @@ spec:
         - apiGroups: ["apps"]
           resources: ["daemonsets", "deployments", "statefulsets", "replicasets"]
           verbs: ["get", "list", "watch"]
-    
+
     extraVolumeMounts:
       - name: varlog
         mountPath: /var/log
@@ -181,7 +181,7 @@ spec:
       - name: varlogpods
         mountPath: /var/log/pods
         readOnly: true
-    
+
     extraVolumes:
       - name: varlog
         hostPath:
@@ -192,12 +192,11 @@ spec:
       - name: varlogpods
         hostPath:
           path: /var/log/pods
-    
+
     podDisruptionBudget:
       enabled: true
       minAvailable: 80%
-  
+
   targetNamespace: observability
   install:
     createNamespace: true
-
