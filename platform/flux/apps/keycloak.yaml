@@ -32,74 +32,38 @@ spec:
       pullPolicy: IfNotPresent
 
     # Replica count
-    replicaCount: 1
+    replicas: 1
 
-    # Keycloak Configuration
-    extraEnv:
-      - name: KC_HTTP_ENABLED
-        value: "true"
-      - name: KC_HOSTNAME_STRICT
-        value: "false"
-      - name: KC_DB
-        value: "postgres"
-      - name: KC_DB_URL_HOST
-        value: "postgresql"
-      - name: KC_DB_URL_DATABASE
-        value: "keycloak"
-      - name: KC_DB_USERNAME
-        value: "keycloak"
-      - name: KC_DB_PASSWORD
-        value: "Keycloak123!"
-      - name: KEYCLOAK_ADMIN
-        value: "admin"
-      - name: KEYCLOAK_ADMIN_PASSWORD
-        value: "Keycloak123!"
+    # Keycloak Configuration - explicitly set extraEnv to empty string to avoid schema issues
+    extraEnv: ""
 
-    # Command
+    # Using args for Keycloak configuration
     command:
       - "/opt/keycloak/bin/kc.sh"
+    args:
       - "start"
       - "--http-enabled=true"
       - "--hostname-strict=false"
+      - "--db=postgres"
+      - "--db-url-host=postgresql"
+      - "--db-url-database=keycloak"
+      - "--db-username=keycloak"
+      - "--db-password=Keycloak123!"
 
     # Service configuration
     service:
       type: ClusterIP
-      httpPort: 8080
 
     # Ingress disabled - using Gateway API
     ingress:
       enabled: false
 
-    # Persistence
-    persistence:
-      enabled: true
-      storageClass: local-path
-      size: 1Gi
-      accessMode: ReadWriteOnce
-
-    # Resources
-    resources:
-      requests:
-        cpu: 250m
-        memory: 512Mi
-      limits:
-        cpu: 500m
-        memory: 1Gi
-
     # Security Context
     podSecurityContext:
       fsGroup: 1001
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
+    securityContext:
       runAsUser: 1001
-      runAsGroup: 1001
-      capabilities:
-        drop:
-          - ALL
-      seccompProfile:
-        type: RuntimeDefault
+      runAsNonRoot: true
   targetNamespace: keycloak
   install:
     createNamespace: true
