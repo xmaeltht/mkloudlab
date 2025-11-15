@@ -1,18 +1,220 @@
-# Flux Kustomization for Grafana Alloy
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
+# Flux HelmRelease for Grafana Alloy
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: grafana
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://grafana.github.io/helm-charts
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
 metadata:
   name: alloy
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./platform/observability/alloy
-  prune: true
-  sourceRef:
-    kind: GitRepository
-    name: mkloudlab
-    namespace: flux-system
+  chart:
+    spec:
+      chart: alloy
+      version: "1.4.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    # Deploy as DaemonSet
+    controller:
+      type: daemonset
+    
+    # Service account
+    serviceAccount:
+      create: true
+      name: alloy
+    
+    # Global pod security context
+    global:
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    
+    # Alloy configuration
+    alloy:
+      # Security context for Alloy container
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: false  # Alloy needs write access for data
+      
+      # ConfigMap with Alloy configuration
+      configMap:
+        create: true
+        content: |
+          // Grafana Alloy configuration for production telemetry pipelines
+          // https://grafana.com/docs/alloy/latest/
+          
+          // =============================
+          // METRICS (Prometheus compatible)
+          // =============================
+          
+          // Receive OTLP metrics/logs from instrumented workloads
+          otelcol.receiver.otlp "default" {
+            grpc {
+              endpoint = "0.0.0.0:4317"
+            }
+            http {
+              endpoint = "0.0.0.0:4318"
+            }
+            output {
+              metrics = [otelcol.exporter.prometheus.default.input]
+              logs    = [otelcol.exporter.loki.default.input]
+              traces  = [otelcol.exporter.otlp.traces.input]
+            }
+          }
+          
+          // Convert OTLP metrics to Prometheus format
+          otelcol.exporter.prometheus "default" {
+            forward_to = [prometheus.remote_write.metrics.receiver]
+          }
+          
+          // Convert OTLP logs to Loki format
+          otelcol.exporter.loki "default" {
+            forward_to = [loki.write.k8s.receiver]
+          }
+          
+          // Remote write metrics into in-cluster Prometheus
+          prometheus.remote_write "metrics" {
+            endpoint {
+              url = "http://prometheus-server.monitoring.svc.cluster.local:80/api/v1/write"
+            }
+          }
+          
+          // =============================
+          // LOGS
+          // =============================
+          
+          // Ship logs to Loki
+          loki.write "k8s" {
+            endpoint {
+              url = "http://logging-loki-stack.logging.svc.cluster.local:3100/loki/api/v1/push"
+            }
+            external_labels = {
+              cluster = "mkloudlab",
+            }
+          }
+          
+          // =============================
+          // TRACES
+          // =============================
+          
+          otelcol.exporter.otlp "traces" {
+            client {
+              endpoint = "observability-tempo.observability.svc.cluster.local:4317"
+            }
+          }
+      
+      # Storage path for Alloy data
+      storagePath: /tmp/alloy
+      
+      # Enable HTTP server for metrics
+      enableHttpServerPort: true
+      listenAddr: 0.0.0.0
+      listenPort: 12345
+      
+      # Initial delay for readiness probe
+      initialDelaySeconds: 10
+      
+      # Extra ports to expose (OTLP gRPC and HTTP)
+      extraPorts:
+        - name: otlp-grpc
+          port: 4317
+          targetPort: 4317
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
+      
+      # Extra environment variables
+      extraEnv:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+    
+    # Image configuration
+    image:
+      repository: grafana/alloy
+      tag: null  # Uses chart's appVersion (v1.11.3)
+      pullPolicy: IfNotPresent
+    
+    # Resources
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+    
+    # Health checks
+    livenessProbe:
+      httpGet:
+        path: /-/healthy
+        port: 12345
+      initialDelaySeconds: 30
+      periodSeconds: 30
+    
+    # Service configuration
+    service:
+      enabled: true
+      type: ClusterIP
+    
+    # RBAC
+    rbac:
+      create: true
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "pods/log", "namespaces", "nodes", "events"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["apps"]
+          resources: ["daemonsets", "deployments", "statefulsets", "replicasets"]
+          verbs: ["get", "list", "watch"]
+    
+    # Volume mounts for log collection
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+        readOnly: true
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+      - name: varlogpods
+        mountPath: /var/log/pods
+        readOnly: true
+    
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlogpods
+        hostPath:
+          path: /var/log/pods
+    
+    # Pod disruption budget
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 80%
+  
   targetNamespace: observability
-  wait: true
-  timeout: 5m
+  install:
+    createNamespace: true
 
