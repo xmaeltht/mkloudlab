@@ -124,8 +124,8 @@ spec:
           runAsGroup: 999
           seccompProfile:
             type: RuntimeDefault
-        ports:
-        - containerPort: 5432
+          ports:
+            - containerPort: 5432
           env:
             - name: POSTGRES_DB
               value: keycloak
@@ -136,10 +136,10 @@ spec:
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
       volumes:
-      - name: postgres-storage
+        - name: postgres-storage
           persistentVolumeClaim:
             claimName: postgresql-pvc
 
