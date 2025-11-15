@@ -1,0 +1,28 @@
+# Flux Kustomization for Keycloak
+# This manages the Keycloak deployment from services/keycloak directory
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./services/keycloak
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
+  targetNamespace: keycloak
+  wait: true
+  timeout: 5m
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: keycloak
+      namespace: keycloak
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: postgresql
+      namespace: keycloak
+
