@@ -37,6 +37,10 @@ spec:
     # Keycloak Configuration - explicitly set extraEnv to empty string to avoid schema issues
     extraEnv: ""
 
+    # Disable built-in PostgreSQL (using Bitnami, which user doesn't want)
+    postgresql:
+      enabled: false
+
     # Using args for Keycloak configuration
     command:
       - "/opt/keycloak/bin/kc.sh"
