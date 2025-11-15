@@ -3,13 +3,14 @@
 # Note: ArgoCD namespace removed (migrated to Flux)
 # Note: Default namespace removed (already exists, cannot be recreated)
 ---
-# Keycloak Namespace - Restricted for security
+# Keycloak Namespace - Baseline for database initialization
+# Note: Changed from restricted to baseline to allow initContainers for PostgreSQL setup
 apiVersion: v1
 kind: Namespace
 metadata:
   name: keycloak
   labels:
-    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
     name: keycloak
