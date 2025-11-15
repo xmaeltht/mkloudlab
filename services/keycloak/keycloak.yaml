@@ -1,82 +1,4 @@
 ---
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: keycloak
-  namespace: keycloak
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: keycloak
-  template:
-    metadata:
-      labels:
-        app: keycloak
-      annotations:
-        sidecar.istio.io/inject: "false"
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        seccompProfile:
-          type: RuntimeDefault
-      containers:
-        - name: keycloak
-          image: quay.io/keycloak/keycloak:25.0.2
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
-            runAsNonRoot: true
-            runAsUser: 1000
-            seccompProfile:
-              type: RuntimeDefault
-          args:
-            - start
-            - --http-enabled=true
-            - --http-port=8080
-            - --hostname-strict=false
-          ports:
-            - containerPort: 8080
-          env:
-            - name: KC_DB
-              value: postgres
-            - name: KC_DB_URL
-              value: jdbc:postgresql://postgresql:5432/keycloak
-            - name: KC_DB_USERNAME
-              value: keycloak
-            - name: KC_DB_PASSWORD
-              value: Keycloak123!
-            - name: KEYCLOAK_ADMIN
-              value: admin
-            - name: KEYCLOAK_ADMIN_PASSWORD
-              value: Keycloak123!
-          readinessProbe:
-            httpGet:
-              path: /realms/master
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 1
-            failureThreshold: 3
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: keycloak
-  namespace: keycloak
-spec:
-  selector:
-    app: keycloak
-  ports:
-    - port: 8080
-      targetPort: 8080
-  type: ClusterIP
-
----
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -115,23 +37,6 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
-      initContainers:
-        - name: postgres-permissions
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              chown -R 999:999 /var/lib/postgresql/data && chmod 700 /var/lib/postgresql/data
-          securityContext:
-            allowPrivilegeEscalation: false
-            runAsUser: 0
-            runAsGroup: 0
-            seccompProfile:
-              type: RuntimeDefault
-          volumeMounts:
-            - name: postgres-storage
-              mountPath: /var/lib/postgresql/data
       containers:
         - name: postgresql
           image: postgres:15
@@ -154,9 +59,27 @@ spec:
               value: keycloak
             - name: POSTGRES_PASSWORD
               value: Keycloak123!
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - keycloak
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - keycloak
+            initialDelaySeconds: 30
+            periodSeconds: 10
       volumes:
         - name: postgres-storage
           persistentVolumeClaim:
@@ -174,4 +97,95 @@ spec:
   ports:
     - port: 5432
       targetPort: 5432
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.4.5
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - start
+            - --http-enabled=true
+            - --hostname-strict=false
+            - --db=postgres
+            - --db-url-host=postgresql
+            - --db-url-database=keycloak
+            - --db-username=keycloak
+            - --db-password=Keycloak123!
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: Keycloak123!
+          readinessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+          startupProbe:
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  selector:
+    app: keycloak
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
   type: ClusterIP
