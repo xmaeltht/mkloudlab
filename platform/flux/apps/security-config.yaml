@@ -15,4 +15,3 @@ spec:
   # targetNamespace removed - resources apply to their own namespaces
   wait: true
   timeout: 5m
-

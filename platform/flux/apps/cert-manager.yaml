@@ -29,4 +29,3 @@ spec:
   targetNamespace: cert-manager
   install:
     createNamespace: true
-

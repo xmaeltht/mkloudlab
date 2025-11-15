@@ -136,4 +136,3 @@ spec:
   targetNamespace: logging
   install:
     createNamespace: true
-

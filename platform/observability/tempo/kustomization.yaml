@@ -9,4 +9,3 @@ helmCharts:
     version: 1.12.3
     releaseName: tempo
     valuesFile: values.yaml
-

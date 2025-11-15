@@ -18,4 +18,3 @@ spec:
   timeout: 5m
   # Note: sonarqube HelmRelease should be installed first manually
   # Dependencies across Kustomization and HelmRelease are not directly supported
-

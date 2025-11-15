@@ -21,4 +21,3 @@ spec:
     node_modules/
     Taskfile.yml
     *.md
-

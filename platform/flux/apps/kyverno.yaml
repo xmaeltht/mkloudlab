@@ -60,4 +60,3 @@ spec:
   targetNamespace: kyverno
   install:
     createNamespace: true
-

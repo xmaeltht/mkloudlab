@@ -11,4 +11,3 @@ resources:
   - resource-management/sonarqube.yaml
   # namespace-security.yaml excluded - namespaces are created by HelmReleases/Kustomizations
   # To apply namespace labels, use kubectl label commands or include in individual app configs
-

@@ -13,4 +13,3 @@ resources:
   - grafana-pvc.yaml
 
 namespace: monitoring
-

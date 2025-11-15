@@ -25,4 +25,3 @@ spec:
         memory: "512Mi"
         cpu: "200m"
       type: Container
-

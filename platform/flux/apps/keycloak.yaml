@@ -15,4 +15,3 @@ spec:
   targetNamespace: keycloak
   wait: true
   timeout: 5m
-

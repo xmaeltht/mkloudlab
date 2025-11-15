@@ -2,4 +2,3 @@
 # Note: Removed - keycloak kustomization already syncs all resources from services/keycloak
 # This file is kept for reference but should not be applied
 # The keycloak kustomization handles both deployment and gateway resources
-

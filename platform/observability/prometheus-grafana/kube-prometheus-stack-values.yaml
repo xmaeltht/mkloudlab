@@ -34,4 +34,3 @@ grafana:
     enabled: true
     storageClassName: local-path
     size: 1Gi
-

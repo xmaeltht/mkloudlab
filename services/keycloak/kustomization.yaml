@@ -7,4 +7,3 @@ resources:
   - keycloak.yaml
   - keycloak-gateway.yaml
   - keycloak-cert.yaml
-

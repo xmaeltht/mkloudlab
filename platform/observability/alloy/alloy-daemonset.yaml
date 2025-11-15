@@ -151,4 +151,3 @@ spec:
     matchLabels:
       app.kubernetes.io/name: grafana-alloy
       app.kubernetes.io/component: agent
-

@@ -37,4 +37,3 @@ spec:
               - key: "{{ request.oldObject.metadata.annotations.\"cert-manager.io/allow-deletion\" || '' }}"
                 operator: NotEquals
                 value: "true"
-

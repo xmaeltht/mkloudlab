@@ -19,4 +19,3 @@ spec:
   timeout: 5m
   # Note: kyverno HelmRelease should be installed first manually
   # Dependencies across Kustomization and HelmRelease are not directly supported
-

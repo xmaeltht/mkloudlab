@@ -14,4 +14,3 @@ resources:
 
 # Exclude Helm values and README files
 # Note: helm-values.yaml and README.md are not Kubernetes resources
-

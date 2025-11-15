@@ -17,4 +17,3 @@ spec:
   timeout: 5m
   # Note: cert-manager HelmRelease should be installed first manually
   # Dependencies across Kustomization and HelmRelease are not directly supported
-

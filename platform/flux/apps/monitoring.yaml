@@ -17,4 +17,3 @@ spec:
   wait: true
   timeout: 5m
   # ArgoCD Application manifests excluded via kustomization.yaml
-

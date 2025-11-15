@@ -16,7 +16,7 @@ spec:
     volumeClaimTemplate:
       spec:
         accessModes:
-        - ReadWriteOnce
+          - ReadWriteOnce
         resources:
           requests:
             storage: 50Gi
@@ -29,4 +29,3 @@ spec:
     runAsUser: 1000
     seccompProfile:
       type: RuntimeDefault
-

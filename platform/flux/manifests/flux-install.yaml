@@ -21,4 +21,3 @@ spec:
 ---
 # Note: The actual Flux controllers are installed via the flux CLI
 # This file is a placeholder - run: flux install to get the actual manifests
-
