@@ -20,38 +20,38 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-      - name: keycloak
-        image: quay.io/keycloak/keycloak:25.0.2
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            drop:
-            - ALL
-          runAsNonRoot: true
-          runAsUser: 1000
-          seccompProfile:
-            type: RuntimeDefault
-        args:
-        - start
-        - --http-enabled=true
-        - --http-port=8080
-        - --hostname-strict=false
-        ports:
-        - containerPort: 8080
-        env:
-        - name: KC_DB
-          value: postgres
-        - name: KC_DB_URL
-          value: jdbc:postgresql://postgresql:5432/keycloak
-        - name: KC_DB_USERNAME
-          value: keycloak
-        - name: KC_DB_PASSWORD
-          value: Keycloak123!
-        - name: KEYCLOAK_ADMIN
-          value: admin
-        - name: KEYCLOAK_ADMIN_PASSWORD
-          value: Keycloak123!
-        readinessProbe:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:25.0.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          args:
+            - start
+            - --http-enabled=true
+            - --http-port=8080
+            - --hostname-strict=false
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KC_DB
+              value: postgres
+            - name: KC_DB_URL
+              value: jdbc:postgresql://postgresql:5432/keycloak
+            - name: KC_DB_USERNAME
+              value: keycloak
+            - name: KC_DB_PASSWORD
+              value: Keycloak123!
+            - name: KEYCLOAK_ADMIN
+              value: admin
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              value: Keycloak123!
+          readinessProbe:
           httpGet:
             path: /realms/master
             port: 8080
@@ -70,8 +70,8 @@ spec:
   selector:
     app: keycloak
   ports:
-  - port: 8080
-    targetPort: 8080
+    - port: 8080
+      targetPort: 8080
   type: ClusterIP
 
 ---
@@ -168,6 +168,6 @@ spec:
   selector:
     app: postgresql
   ports:
-  - port: 5432
-    targetPort: 5432
+    - port: 5432
+      targetPort: 5432
   type: ClusterIP

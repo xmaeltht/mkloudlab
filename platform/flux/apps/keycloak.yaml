@@ -30,10 +30,10 @@ spec:
       repository: quay.io/keycloak/keycloak
       tag: "26.4.5"
       pullPolicy: IfNotPresent
-    
+
     # Replica count
     replicaCount: 1
-    
+
     # Keycloak Configuration
     extraEnv: |
       - name: KC_HTTP_ENABLED
@@ -54,30 +54,30 @@ spec:
         value: "admin"
       - name: KEYCLOAK_ADMIN_PASSWORD
         value: "Keycloak123!"
-    
+
     # Command
     command:
       - "/opt/keycloak/bin/kc.sh"
       - "start"
       - "--http-enabled=true"
       - "--hostname-strict=false"
-    
+
     # Service configuration
     service:
       type: ClusterIP
       httpPort: 8080
-    
+
     # Ingress disabled - using Gateway API
     ingress:
       enabled: false
-    
+
     # Persistence
     persistence:
       enabled: true
       storageClass: local-path
       size: 1Gi
       accessMode: ReadWriteOnce
-    
+
     # Resources
     resources:
       requests:
@@ -86,7 +86,7 @@ spec:
       limits:
         cpu: 500m
         memory: 1Gi
-    
+
     # Security Context
     podSecurityContext:
       fsGroup: 1001
