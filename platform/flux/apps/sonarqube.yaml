@@ -78,7 +78,7 @@ spec:
     postgresql:
       enabled: true
       image:
-        repository: postgresql
+        repository: postgres
         tag: "18"
       postgresqlUsername: sonarUser
       postgresqlPassword: SonarQube123!
