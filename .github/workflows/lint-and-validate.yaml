@@ -39,6 +39,7 @@ jobs:
             ! -name "helm-values.yaml" \
             ! -name "kube-prometheus-stack-values.yaml" \
             ! -name "*.river" \
+            ! -name "kustomization.yaml" \
             ! -path "*/templates/*" 2>/dev/null)
 
           if [ -z "$MANIFESTS" ]; then
@@ -47,5 +48,5 @@ jobs:
           fi
 
           echo "$MANIFESTS" | xargs kubeconform -summary -output=text \
-            -schema-location default \
-            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
