@@ -18,7 +18,7 @@ spec:
   chart:
     spec:
       chart: keycloak
-      version: 26.4.5
+      version: 18.10.0
       sourceRef:
         kind: HelmRepository
         name: codecentric
@@ -27,60 +27,36 @@ spec:
   values:
     # Image configuration
     image:
-      registry: docker.io
-      repository: keycloak/keycloak
+      repository: quay.io/keycloak/keycloak
       tag: "26.4.5"
-      imagePullPolicy: Always
-      command: "/opt/keycloak/bin/kc.sh"
+      pullPolicy: IfNotPresent
     
     # Replica count
     replicaCount: 1
     
-    # Security Context
-    podSecurityContext:
-      fsGroup: 1001
-    containerSecurityContext:
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      runAsUser: 1001
-      runAsGroup: 1001
-      readOnlyRootFilesystem: false
-      capabilities:
-        drop:
-          - ALL
-    
     # Keycloak Configuration
-    keycloak:
-      adminUser: admin
-      adminPassword: "Keycloak123!"
-      hostnameStrict: false
-      httpEnabled: true
-      httpPort: 8080
-      production: false
-      extraArgs: []
+    extraEnv: |
+      KC_HTTP_ENABLED=true
+      KC_HOSTNAME_STRICT=false
+      KC_DB=postgres
+      KC_DB_URL_HOST=postgresql
+      KC_DB_URL_DATABASE=keycloak
+      KC_DB_USERNAME=keycloak
+      KC_DB_PASSWORD=Keycloak123!
+      KEYCLOAK_ADMIN=admin
+      KEYCLOAK_ADMIN_PASSWORD=Keycloak123!
     
-    # Database Configuration - Use embedded PostgreSQL
-    database:
-      type: postgres
-      name: keycloak
-      username: keycloak
-      password: "Keycloak123!"
-    
-    # Embedded PostgreSQL
-    postgres:
-      enabled: true
-      auth:
-        database: "keycloak"
-        username: ""
-        password: ""
+    # Command
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+      - "start"
+      - "--http-enabled=true"
+      - "--hostname-strict=false"
     
     # Service configuration
     service:
       type: ClusterIP
       httpPort: 8080
-      httpsPort: 8443
-      httpTargetPort: 8080
-      httpsTargetPort: 8443
     
     # Ingress disabled - using Gateway API
     ingress:
@@ -91,30 +67,7 @@ spec:
       enabled: true
       storageClass: local-path
       size: 1Gi
-      accessModes:
-        - ReadWriteOnce
-    
-    # Probes
-    livenessProbe:
-      enabled: true
-      initialDelaySeconds: 60
-      periodSeconds: 30
-      timeoutSeconds: 5
-      failureThreshold: 3
-    
-    readinessProbe:
-      enabled: true
-      initialDelaySeconds: 30
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 3
-    
-    startupProbe:
-      enabled: true
-      initialDelaySeconds: 30
-      periodSeconds: 10
-      timeoutSeconds: 5
-      failureThreshold: 60
+      accessMode: ReadWriteOnce
     
     # Resources
     resources:
@@ -125,15 +78,19 @@ spec:
         cpu: 500m
         memory: 1Gi
     
-    # Service Account
-    serviceAccount:
-      create: true
-      automountServiceAccountToken: false
-    
-    # Init Containers
-    initContainers:
-      waitForPostgres:
-        image: "postgres:17.6"
+    # Security Context
+    podSecurityContext:
+      fsGroup: 1001
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1001
+      runAsGroup: 1001
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
   targetNamespace: keycloak
   install:
     createNamespace: true
