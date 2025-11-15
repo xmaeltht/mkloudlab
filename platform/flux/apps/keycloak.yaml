@@ -35,7 +35,7 @@ spec:
     replicaCount: 1
 
     # Keycloak Configuration
-    extraEnv: |
+    extraEnv:
       - name: KC_HTTP_ENABLED
         value: "true"
       - name: KC_HOSTNAME_STRICT
