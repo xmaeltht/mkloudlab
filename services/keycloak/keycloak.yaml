@@ -52,13 +52,13 @@ spec:
             - name: KEYCLOAK_ADMIN_PASSWORD
               value: Keycloak123!
           readinessProbe:
-          httpGet:
-            path: /realms/master
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
+            httpGet:
+              path: /realms/master
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
 
 ---
 apiVersion: v1
