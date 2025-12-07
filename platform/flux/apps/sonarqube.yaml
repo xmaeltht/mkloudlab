@@ -28,11 +28,11 @@ spec:
     # Enable community edition
     community:
       enabled: true
-      buildNumber: "10.8.1-community"
+      buildNumber: "10.7.0-community"
     # Image configuration
     image:
       repository: sonarqube
-      tag: "10.8.1-community"
+      tag: "10.7.0-community"
       pullPolicy: IfNotPresent
     # Monitoring passcode required for probes to work
     monitoringPasscode: SonarQube123!
