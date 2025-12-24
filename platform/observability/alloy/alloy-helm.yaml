@@ -1,0 +1,186 @@
+# Flux HelmRelease for Grafana Alloy
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: observability
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: alloy
+      version: "1.4.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    controller:
+      type: daemonset
+
+    serviceAccount:
+      create: true
+      name: alloy
+
+    global:
+      podSecurityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+    alloy:
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+        readOnlyRootFilesystem: false
+
+      configMap:
+        create: true
+        content: |
+          // Grafana Alloy configuration for production telemetry pipelines
+          // https://grafana.com/docs/alloy/latest/
+
+          // =============================
+          // METRICS (Prometheus compatible)
+          // =============================
+
+          // Receive OTLP metrics/logs from instrumented workloads
+          otelcol.receiver.otlp "default" {
+            grpc {
+              endpoint = "0.0.0.0:4317"
+            }
+            http {
+              endpoint = "0.0.0.0:4318"
+            }
+            output {
+              metrics = [otelcol.exporter.prometheus.default.input]
+              logs    = [otelcol.exporter.loki.default.input]
+              traces  = [otelcol.exporter.otlp.traces.input]
+            }
+          }
+
+          // Convert OTLP metrics to Prometheus format
+          otelcol.exporter.prometheus "default" {
+            forward_to = [prometheus.remote_write.metrics.receiver]
+          }
+
+          // Convert OTLP logs to Loki format
+          otelcol.exporter.loki "default" {
+            forward_to = [loki.write.k8s.receiver]
+          }
+
+          // Remote write metrics into in-cluster Prometheus
+          prometheus.remote_write "metrics" {
+            endpoint {
+              url = "http://prometheus-server.observability.svc.cluster.local:80/api/v1/write"
+            }
+          }
+
+          // =============================
+          // LOGS
+          // =============================
+
+          // Ship logs to Loki
+          loki.write "k8s" {
+            endpoint {
+              url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
+            }
+            external_labels = {
+              cluster = "mkloudlab",
+            }
+          }
+
+          // =============================
+          // TRACES
+          // =============================
+
+          otelcol.exporter.otlp "traces" {
+            client {
+              endpoint = "tempo.observability.svc.cluster.local:4317"
+            }
+          }
+
+      storagePath: /tmp/alloy
+      enableHttpServerPort: true
+      listenAddr: 0.0.0.0
+      listenPort: 12345
+      initialDelaySeconds: 10
+
+      extraPorts:
+        - name: otlp-grpc
+          port: 4317
+          targetPort: 4317
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
+
+      extraEnv:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+
+    image:
+      repository: grafana/alloy
+      tag: null
+      pullPolicy: IfNotPresent
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+    livenessProbe:
+      httpGet:
+        path: /-/healthy
+        port: 12345
+      initialDelaySeconds: 30
+      periodSeconds: 30
+
+    service:
+      enabled: true
+      type: ClusterIP
+
+    rbac:
+      create: true
+      rules:
+        - apiGroups: [""]
+          resources: ["pods", "pods/log", "namespaces", "nodes", "events"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["apps"]
+          resources: ["daemonsets", "deployments", "statefulsets", "replicasets"]
+          verbs: ["get", "list", "watch"]
+
+    extraVolumeMounts:
+      - name: varlog
+        mountPath: /var/log
+        readOnly: true
+      - name: varlibdockercontainers
+        mountPath: /var/lib/docker/containers
+        readOnly: true
+      - name: varlogpods
+        mountPath: /var/log/pods
+        readOnly: true
+
+    extraVolumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdockercontainers
+        hostPath:
+          path: /var/lib/docker/containers
+      - name: varlogpods
+        hostPath:
+          path: /var/log/pods
+
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 80%
