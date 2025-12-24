@@ -15,16 +15,6 @@ metadata:
     pod-security.kubernetes.io/warn: restricted
     name: keycloak
 ---
-# Monitoring Namespace - Restricted for observability
-apiVersion: v1
-kind:  - name: compute-quota
-    namespace: observability
-  labels:
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/war  - name: mem-limit-range
-    namespace: observability
----
 # Observability Namespace - Restricted for Alloy collectors
 apiVersion: v1
 kind: Namespace
