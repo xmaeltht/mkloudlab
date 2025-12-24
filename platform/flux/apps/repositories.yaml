@@ -1,0 +1,18 @@
+# Flux HelmRepositories for all platform services
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: codecentric
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://codecentric.github.io/helm-charts
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: sonarqube
+  namespace: flux-system
+spec:
+  interval: 1h
+  url: https://SonarSource.github.io/helm-chart-sonarqube
