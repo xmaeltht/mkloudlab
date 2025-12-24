@@ -6,3 +6,4 @@ resources:
   - gateway.yaml
   - certificate.yaml
   - postgres-pvc.yaml
+  - postgresql-deployment.yaml
