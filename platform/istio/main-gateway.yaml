@@ -29,7 +29,7 @@ spec:
             namespace: sonarqube
           - name: grafana-cert
             kind: Secret
-            namespace: monitoring
+            namespace: observability
           - name: prometheus-cert
             kind: Secret
-            namespace: monitoring
+            namespace: observability

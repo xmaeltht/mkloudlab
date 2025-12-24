@@ -6,7 +6,6 @@ kind: Kustomization
 resources:
   - network-policies.yaml
   - rbac-policies.yaml
-  - resource-management/monitoring.yaml
   - resource-management/observability.yaml
   - resource-management/sonarqube.yaml
   # namespace-security.yaml excluded - namespaces are created by HelmReleases/Kustomizations

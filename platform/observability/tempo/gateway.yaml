@@ -1,34 +1,32 @@
-# Gateway for Keycloak
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
-  name: keycloak-gateway
-  namespace: keycloak
+  name: tempo-gateway
+  namespace: observability
 spec:
   gatewayClassName: istio
   listeners:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: keycloak.maelkloud.com
+      hostname: tempo.maelkloud.com
       tls:
         mode: Terminate
         certificateRefs:
-          - name: keycloak-cert
+          - name: tempo-cert
             kind: Secret
 ---
-# HTTPRoute to expose Keycloak
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: keycloak-route
-  namespace: keycloak
+  name: tempo-route
+  namespace: observability
 spec:
   parentRefs:
-    - name: keycloak-gateway
+    - name: tempo-gateway
   hostnames:
-    - keycloak.maelkloud.com
+    - tempo.maelkloud.com
   rules:
     - backendRefs:
-        - name: keycloak
-          port: 8080
+        - name: tempo
+          port: 3200

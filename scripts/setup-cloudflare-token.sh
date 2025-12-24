@@ -55,25 +55,11 @@ echo "🔧 Setting up environment..."
 # Add to current shell
 export CLOUDFLARE_API_TOKEN="$CLOUDFLARE_TOKEN"
 
-# Add to shell profile
-SHELL_PROFILE=""
-if [ -f "$HOME/.bashrc" ]; then
-    SHELL_PROFILE="$HOME/.bashrc"
-elif [ -f "$HOME/.zshrc" ]; then
-    SHELL_PROFILE="$HOME/.zshrc"
-elif [ -f "$HOME/.profile" ]; then
-    SHELL_PROFILE="$HOME/.profile"
-fi
-
-if [ ! -z "$SHELL_PROFILE" ]; then
-    echo "" >> "$SHELL_PROFILE"
-    echo "# Cloudflare API Token for cert-manager" >> "$SHELL_PROFILE"
-    echo "export CLOUDFLARE_API_TOKEN=\"$CLOUDFLARE_TOKEN\"" >> "$SHELL_PROFILE"
-    echo "✅ Added to $SHELL_PROFILE"
-else
-    echo "⚠️  Could not find shell profile. Please add manually:"
-    echo "   export CLOUDFLARE_API_TOKEN=\"$CLOUDFLARE_TOKEN\""
-fi
+echo "⚠️  SECURITY ALERT: This script no longer saves the token to your shell profile."
+echo "   This is to prevent storing secrets in plaintext on your disk."
+echo ""
+echo "   Please export the token for your current session:"
+echo "   export CLOUDFLARE_API_TOKEN=\"$CLOUDFLARE_TOKEN\""
 
 echo ""
 echo "✅ Cloudflare API Token configured!"

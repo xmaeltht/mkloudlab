@@ -1,213 +1,93 @@
 # Mkloudlab - Kubernetes GitOps Repository
 
-Mkloudlab is the authoritative GitOps source for building and operating a production-grade Kubernetes platform. The repository bundles application manifests, infrastructure configuration, automation scripts, and operational runbooks so the entire stack can be managed from a single, versioned control point.
+Mkloudlab is a production-grade Kubernetes platform managed via GitOps (Flux CD). It bundles infrastructure provisioning, platform services, and observability into a single, automated repository.
 
-## Repository Structure
-- `platform/`: Flux GitOps configuration and platform capabilities (cert-manager, Istio, Kyverno, security, observability).
-- `services/`: Workload-specific manifests and supporting configuration for Keycloak, SonarQube, and related gateways.
-- `infrastructure/`: Provisioning and infrastructure-as-code assets, including Terraform modules and Vagrant environments.
-- `scripts/`: Operational shell scripts for setup, prerequisite installation, and recovery workflows.
-- `docs/`: Consolidated documentation, runbooks, reports, and security guidance.
-- `Taskfile.yml`, `docs/reference/TASKS.md`, `docs/reference/TASKFILE_QUICKSTART.md`: Task automation entry points, reference, and quick-start guide.
+## 🚀 Quick Start
 
-Welcome to the Mkloudlab GitOps repository. This project provides a complete, automated setup for a Kubernetes cluster, deploying a suite of powerful open-source applications using Flux. It serves as a blueprint for building a robust, secure, and observable cloud-native environment.
+Follow this chronological order to deploy the platform from scratch.
 
-## Core Technologies
+### 1. Prerequisites
+Ensure you have the following installed:
+- **Vagrant** & **VirtualBox** (for local cluster)
+- **Task** (Automation tool): `brew install go-task/tap/go-task`
+- **Kubectl** & **Flux CLI**: `curl -s https://fluxcd.io/install.sh | sudo bash`
 
-This platform is built on a foundation of industry-standard cloud-native tools:
-
--   **Container Orchestration:** Kubernetes
--   **GitOps Controller:** Flux CD
--   **Ingress & Gateway:** Istio with Gateway API
--   **Load Balancer:** MetalLB
--   **Certificate Management:** Cert-Manager with Let's Encrypt
--   **Identity & Access Management:** Keycloak
--   **Policy Enforcement:** Kyverno
--   **Code Quality:** SonarQube
--   **Monitoring & Observability:** Prometheus & Grafana with Alertmanager, Grafana Alloy collector
--   **Tracing:** Grafana Tempo (OTLP compatible)
--   **Centralized Logging:** Loki Stack
--   **Secrets Management:** External Secrets Operator
--   **Security:** Pod Security Standards, RBAC, Network Policies
--   **Object Storage:** External S3-compatible provider (bring your own)
--   **Infrastructure as Code:** Terraform (for Keycloak configuration)
--   **Local Provisioning:** Vagrant & Kubeadm
-
-## Automated Deployment with Flux
-
-This repository uses **Flux GitOps** to deploy the entire stack. After provisioning a Kubernetes cluster, the process is automated through Flux controllers.
-
-### 1. Install Flux
-
-First, install Flux into your cluster:
-
+### 2. Infrastructure (Vagrant)
+Provision the local Kubernetes cluster.
 ```bash
-# Install Flux CLI (if not already installed)
-curl -s https://fluxcd.io/install.sh | sudo bash
+# Default: 1 Controller + 2 Workers
+task vagrant:up
 
-# Install Flux in the cluster
+# Optional: Customize worker count
+task vagrant:up WORKER_COUNT=3
+
+# Scale nodes dynamically (Up or Down)
+task scale COUNT=1
+```
+
+### 3. Cluster Bootstrap
+Install essential cluster components (Gateway API, Storage, Cert-Manager) and set up secrets.
+```bash
+# 1. Cloudflare Token (Required for TLS)
+./scripts/setup-cloudflare-token.sh
+
+# 2. Install Prerequisites
+task install:prerequisites
+```
+
+### 4. GitOps Deployment (Flux)
+Deploy the platform and applications using Flux.
+```bash
+# 1. Install Flux controllers
 task install:flux
-```
 
-### 2. Configure GitRepository
-
-Configure Flux to watch this repository:
-
-```bash
+# 2. Configure the GitRepository
 task flux:configure-repo
-```
 
-### 3. Deploy the Entire Stack
-
-Deploy all applications using Flux:
-
-```bash
+# 3. Deploy Applications
 task install:apps
 ```
-
-Flux will now begin deploying and configuring all applications automatically. You can monitor the progress using:
-
+flux will now automatically reconcile the state. You can check progress with:
 ```bash
 task flux:status
 # or
 flux get all -n flux-system
 ```
 
-### 3. Post-Deployment Configuration
+### 5. Post-Installation
+Configure sensitive resources that are not in Git.
+- **Keycloak & Secrets**: See `infrastructure/terraform/keycloak-realm`.
 
-Some applications require secrets or configurations that should not be stored in Git. After the main deployment is complete, run the following scripts:
+---
 
--   **Keycloak Configuration:** Use the Terraform scripts in `infrastructure/terraform/keycloak-realm` to configure realms and clients.
--   **Application Secrets:** Run the `secret.sh` script in that directory to create the necessary OAuth secrets for Grafana, Prometheus, etc.
+## 🏗 Repository Structure
 
-## Using Taskfile for Automation
+| Directory | Description |
+| --------- | ----------- |
+| `platform/` | **Flux Configuration**: `flux/apps` contains all HelmReleases/Kustomizations. |
+| `platform/observability/` | **Consolidated Observability Stack**: Prometheus, Grafana, Alloy, Tempo (all in `observability` namespace). |
+| `services/` | **Workloads**: Keycloak, SonarQube, etc. |
+| `infrastructure/vagrant/` | **Local Env**: Vagrantfile and bootstrap scripts. |
+| `docs/` | **Documentation**: Runbooks and Tasks reference. |
 
-This repository now includes comprehensive Taskfile automation to streamline your GitOps workflows. Taskfile provides a simple, powerful way to automate repetitive tasks and complex operations.
+## 🛠 Observability
+All observability components are consolidated in the **`observability`** namespace:
+- **Grafana Alloy**: OTLP collector (Metrics, Logs, Traces).
+- **Prometheus**: Metrics storage.
+- **Loki**: Log aggregation.
+- **Tempo**: Distributed tracing.
+- **Grafana**: Visualization.
 
-### Prerequisites Setup
-
-Before deploying applications, install the required prerequisites:
-
-```bash
-# Set up Cloudflare API token (for automated TLS certificates)
-./scripts/setup-cloudflare-token.sh
-
-# Install all prerequisites (Gateway API, local-path storage, metrics-server, cert-manager, Istio)
-task install:prerequisites
-```
-
-### Cloudflare Token Setup
-
-For automated TLS certificate management, you need a Cloudflare API token:
-
-1. **Create API Token**: Go to [Cloudflare API Tokens](https://dash.cloudflare.com/profile/api-tokens)
-2. **Set Permissions**: Zone:Read and DNS:Edit
-3. **Run Setup Script**: `./scripts/setup-cloudflare-token.sh`
-
-The script will:
-- Guide you through token creation
-- Set up environment variables
-- Test the token
-- Enable automated certificate management
-
-## Quick Start
-```bash
-# Install Task (if not already installed)
-brew install go-task/tap/go-task
-
-# Show all available tasks
-task
-
-# Install the complete stack
-task install
-
-# Check status
-task status
-```
-
-### Key Benefits
-- **Simplified Operations**: One command to install the entire stack
-- **Consistent Workflows**: Standardized tasks for development and operations
-- **Error Handling**: Built-in validation and error checking
-- **Component Management**: Specialized tasks for Terraform, Vagrant, and Flux
-- **Development Tools**: Linting, formatting, and validation automation
-
-For detailed usage instructions, see [TASKFILE_QUICKSTART.md](./docs/reference/TASKFILE_QUICKSTART.md).
-
-## 🔒 Security Features
-
-This repository implements enterprise-grade security features:
-
-- **Pod Security Standards**: Enforced across all namespaces with appropriate restriction levels
-- **Network Policies**: Comprehensive micro-segmentation with zero-trust networking
-- **RBAC Policies**: Fine-grained access control with principle of least privilege
-- **External Secrets Management**: Secure secrets handling without Git storage
-- **Security Monitoring**: Enhanced observability with security-focused metrics and alerting
-
-### Security Commands
-
-```bash
-# Run comprehensive security scan
-task security:scan
-
-# Validate security configurations
-task security:validate
-
-# Check external secrets status
-task secrets:status
-
-# Enhanced health check (includes security status)
-task health
-```
-
-### Validation Commands
-
-```bash
-# Validate all Kubernetes manifests (syntax validation only)
-task validate:manifests
-
-# Validate manifests against running cluster (requires cluster connection)
-task validate:manifests:cluster
-
-# Validate cluster connectivity and prerequisites
-task validate:cluster
-
-# Check certificate status across all namespaces
-task certs:status
-
-# Comprehensive health check of all components
-task health
-```
-
-For detailed security documentation, see [SECURITY_ENHANCEMENTS.md](./docs/security/SECURITY_ENHANCEMENTS.md).
-
-## Observability with Grafana Alloy & OpenTelemetry
-
-Grafana Alloy runs as a daemonset in the `observability` namespace and exposes OTLP endpoints (`otlp-grpc`, `otlp-http`) through the `alloy-gateway` service. Instrument workloads with OpenTelemetry SDKs or auto-instrumentation agents and point them to:
-
+Instrument your applications to send telemetry to Alloy:
 ```
 OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy-gateway.observability:4318
 ```
 
-- Metrics are remote-written into the in-cluster Prometheus instance.
-- Logs are shipped to the Loki stack, replacing Promtail requirements.
-- Traces are stored in Grafana Tempo (`platform/observability/tempo`) with long-term persistence.
+## 🔒 Security
+- **Pod Security Standards**: Enforced (Restricted/Baseline).
+- **Network Policies**: Default deny + allow-listing.
+- **Secrets**: Managed via External Secrets Operator.
 
-The Alloy manifests are managed at `platform/observability/alloy` (Flux Kustomization `platform/flux/apps/alloy.yaml`). Tempo is provisioned via Helm using `platform/flux/apps/tempo.yaml`.
-
-## Repository Structure
-
-Each directory contains the Kubernetes manifests or configuration for a specific component. Click the links for detailed deployment instructions.
-
-| Directory                               | Description                                                                        |
-| --------------------------------------- | ---------------------------------------------------------------------------------- |
-| [platform/](./platform/)                | Platform building blocks including Flux, cert-manager, Istio, Kyverno, security, and observability. |
-| [platform/flux/](./platform/flux/)     | Flux GitOps configuration, GitRepository, and all application definitions (HelmReleases and Kustomizations). |
-| [platform/observability/prometheus-grafana/](./platform/observability/prometheus-grafana/) | Prometheus, Grafana, ServiceMonitors, and supporting observability configuration. |
-| [platform/observability/alloy/](./platform/observability/alloy/) | Grafana Alloy collector (OTLP ingestion, log shipping, metrics fan-out). |
-| [platform/observability/tempo/](./platform/observability/tempo/) | Grafana Tempo trace storage (Helm chart + persistence). |
-| [services/](./services/)                | Workload services such as Keycloak and SonarQube with their gateways and related configuration. |
-| [infrastructure/terraform/](./infrastructure/terraform/) | Terraform code to manage Keycloak realms, secrets, and other external integrations. |
-| [infrastructure/vagrant/](./infrastructure/vagrant/) | Vagrant assets for provisioning a local multi-node Kubernetes cluster. |
-| [scripts/](./scripts/)                  | Automation scripts for installation, Cloudflare token setup, and cluster recovery tasks. |
-| [docs/](./docs/)                        | Runbooks, reference guides, reports, and security documentation for day-2 operations. |
+## 📚 Documentation
+- [Available Tasks](./docs/reference/TASKS.md)
+- [Security Features](./docs/security/SECURITY_ENHANCEMENTS.md)

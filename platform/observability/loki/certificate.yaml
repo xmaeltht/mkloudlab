@@ -1,15 +1,14 @@
-# TLS Certificate for Keycloak
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: keycloak-cert
-  namespace: keycloak
+  name: loki-cert
+  namespace: observability
 spec:
-  secretName: keycloak-cert
+  secretName: loki-cert
   duration: 2160h
   renewBefore: 360h
   dnsNames:
-    - keycloak.maelkloud.com
+    - loki.maelkloud.com
   issuerRef:
     name: letsencrypt-dns-cloudflare
     kind: ClusterIssuer

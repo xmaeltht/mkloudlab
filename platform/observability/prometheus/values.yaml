@@ -1,14 +1,18 @@
-# Helm values override for kube-prometheus-stack
-# Use this file if deploying kube-prometheus-stack via Helm
-# This ensures proper storageClass configuration for all components
-#
-# Usage:
-#   helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
-#     -n monitoring \
-#     -f kube-prometheus-stack-values.yaml
+# Helm values override for kube-prometheus-stack (Prometheus Only)
+# Disables Grafana to allow standalone deployment
+
+grafana:
+  enabled: false
 
 prometheus:
+  enabled: true
   prometheusSpec:
+    fullnameOverride: prometheus-server
+    service:
+      port: 80
+      targetPort: 9090
+    ingress:
+      enabled: false
     storageSpec:
       volumeClaimTemplate:
         spec:
@@ -19,6 +23,7 @@ prometheus:
               storage: 50Gi
 
 alertmanager:
+  enabled: true
   alertmanagerSpec:
     storage:
       volumeClaimTemplate:
@@ -28,9 +33,3 @@ alertmanager:
           resources:
             requests:
               storage: 5Gi
-
-grafana:
-  persistence:
-    enabled: true
-    storageClassName: local-path
-    size: 1Gi

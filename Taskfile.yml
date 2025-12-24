@@ -81,8 +81,9 @@ tasks:
       - echo "Observability layer..."
       - kubectl apply -f platform/flux/apps/alloy.yaml
       - kubectl apply -f platform/flux/apps/tempo.yaml
-      - kubectl apply -f platform/flux/apps/monitoring.yaml
-      - kubectl apply -f platform/flux/apps/loki-stack.yaml
+      - kubectl apply -f platform/flux/apps/prometheus.yaml
+      - kubectl apply -f platform/flux/apps/grafana.yaml
+      - kubectl apply -f platform/flux/apps/loki.yaml
       - echo "✅ All Flux applications registered"
 
   install:certificates:
@@ -221,9 +222,6 @@ tasks:
     cmds:
       - echo "Applying certificate manifests..."
       - kubectl apply -f platform/argocd/manifests/argocd-cert.yaml
-      - kubectl apply -f platform/observability/prometheus-grafana/certificates.yaml
-      - kubectl apply -f services/keycloak/keycloak-cert.yaml || echo "Keycloak namespace not ready yet"
-      - kubectl apply -f services/sonarqube/sonar-cert.yaml || echo "SonarQube namespace not ready yet"
       - kubectl apply -f platform/argocd/manifests/referencegrant.yaml || true
       - echo "✅ All certificates applied"
 
@@ -383,6 +381,14 @@ tasks:
       - task: clean
       - sleep 10
       - task: install
+
+  scale:
+    desc: Scale the cluster nodes (proxy to vagrant:scale)
+    cmds:
+      - task: vagrant:scale
+        vars: { COUNT: "{{.COUNT}}" }
+
+
 
   # =============================================================================
   # MONITORING & TROUBLESHOOTING

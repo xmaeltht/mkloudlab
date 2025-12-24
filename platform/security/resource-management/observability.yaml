@@ -5,11 +5,11 @@ metadata:
   namespace: observability
 spec:
   hard:
-    requests.cpu: "4"
-    requests.memory: 4Gi
-    limits.cpu: "8"
-    limits.memory: 8Gi
-    persistentvolumeclaims: "4"
+    requests.cpu: "6"
+    requests.memory: 8Gi
+    limits.cpu: "12"
+    limits.memory: 16Gi
+    persistentvolumeclaims: "12"
 ---
 apiVersion: v1
 kind: LimitRange

@@ -1,9 +1,9 @@
-# Kustomization for Keycloak
-# This file is required for Flux to properly sync the directory
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
-  - keycloak.yaml
-  - keycloak-gateway.yaml
-  - keycloak-cert.yaml
+  - namespace.yaml
+  - sonarqube-helm.yaml
+  - keycloak-helm.yaml
+  - gateway.yaml
+  - certificate.yaml
+  - postgres-pvc.yaml
