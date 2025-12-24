@@ -1,85 +1,16 @@
-# Flux HelmRelease for Prometheus (kube-prometheus-stack)
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: prometheus-community
-  namespace: flux-system
-spec:
-  interval: 1h
-  url: https://prometheus-community.github.io/helm-charts
----
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
 metadata:
   name: prometheus
   namespace: flux-system
 spec:
   interval: 5m
-  chart:
-    spec:
-      chart: kube-prometheus-stack
-      version: 56.6.2
-      sourceRef:
-        kind: HelmRepository
-        name: prometheus-community
-        namespace: flux-system
-      interval: 1h
-  valuesFrom:
-    - kind: ConfigMap
-      name: prometheus-values
-      valuesKey: values.yaml
-      optional: true
-  # Check if we should load values from file directly or map.
-  # Strategy: We will Use a ConfigMapGenerator in a Kustomization to load the values.yaml we just created.
-  # OR easier for now: embedding the values here OR referencing the file if we use Kustomization.
-  # The previous setup used Kustomization to apply resources.
-  # Let's try to map the values file via creating a ConfigMap in the directory and using Flux to apply it? which is complex.
-  # Simpler: We will just inline the values or use `values` field directly IF we want to avoid Kustomization for now.
-  # BUT since I wrote values.yaml to a file, I should probably creating a Kustomization that creates a ConfigMap 'prometheus-values' from that file.
-  # Wait, the prompt asked for "prometheus repo" and "grafana repo".
-  # I'll create a Kustomization for each directory.
-  
+  path: ./platform/observability/prometheus
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
   targetNamespace: observability
-  install:
-    createNamespace: true
-  values:
-    # Inline values to ensure simple deployment matching the file we wrote, 
-    # OR we can assume the user will apply the Kustomization that generates the ConfigMap.
-    # To be safe and self-contained, I will also put the critical values here or rely on the Kustomization.
-    # Let's stick to the file structure: Flux App -> Kustomization -> HelmRelease + ConfigMap.
-    # Wait, the previous pattern was: Flux App (HelmRelease) pointing to Helm Repo.
-    # I will modify this file to point to the values file if I can, but Flux HelmRelease needs `valuesFrom` ConfigMap/Secret.
-    # So I need a Kustomization to create that ConfigMap.
-    # ALTERNATIVELY: I can simpler Put the values directly in this file.
-    # I will put the values directly in this file for simplicity as requested "respective code".
-    
-    grafana:
-      enabled: false
-
-    prometheus:
-      enabled: true
-      prometheusSpec:
-        fullnameOverride: prometheus-server
-        service:
-          port: 80
-          targetPort: 9090
-        storageSpec:
-          volumeClaimTemplate:
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 50Gi
-
-    alertmanager:
-      enabled: true
-      alertmanagerSpec:
-        storage:
-          volumeClaimTemplate:
-            spec:
-              accessModes: ["ReadWriteOnce"]
-              storageClassName: local-path
-              resources:
-                requests:
-                  storage: 5Gi
+  wait: true
+  timeout: 5m
