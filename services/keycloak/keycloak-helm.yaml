@@ -56,10 +56,76 @@ spec:
       - name: KC_HOSTNAME_STRICT_BACKCHANNEL
         value: "false"
 
-    # Cache Configuration
+    # Cache Configuration - Use local cache to avoid clustering/JGroups issues
+    # This automatically adds --cache=local to the command
     cache:
       stack: local
 
     # HTTP Configuration
     http:
       relativePath: "/"
+
+    # Hardened Development Mode - Security hardening with start-dev
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+      - "start-dev"
+      - "--cache=local"
+      - "--proxy-headers=xforwarded"
+
+    # Security Context - Pod Level
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Security Context - Container Level
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: false
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Resource Limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+      limits:
+        cpu: 2000m
+        memory: 2048Mi
+
+    # Health probes - Using root path (dev mode compatible)
+    livenessProbe: |
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 120
+      timeoutSeconds: 5
+      periodSeconds: 30
+      failureThreshold: 3
+
+    readinessProbe: |
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 6
+
+    startupProbe: |
+      httpGet:
+        path: /
+        port: http
+      initialDelaySeconds: 10
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 30

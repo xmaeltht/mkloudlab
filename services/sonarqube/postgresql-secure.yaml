@@ -1,4 +1,6 @@
 # PostgreSQL StatefulSet for SonarQube - SECURITY HARDENED
+# NOTE: Passwords should be managed via External Secrets Operator in production
+
 apiVersion: v1
 kind: Secret
 metadata:
@@ -10,7 +12,7 @@ type: Opaque
 stringData:
   # TODO: Use External Secrets Operator or Sealed Secrets
   # Generate strong passwords: openssl rand -base64 32
-  postgres-password: "REDACTED"
+  postgres-password: "CHANGE_ME_USE_STRONG_PASSWORD"
   postgres-user: "sonarUser"
   postgres-db: "sonarDB"
 ---
@@ -40,28 +42,6 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
-
-      # Init container to fix permissions on existing data
-      initContainers:
-      - name: fix-permissions
-        image: postgres:15-alpine
-        command:
-          - sh
-          - -c
-          - |
-            chown -R 999:999 /var/lib/postgresql/data || true
-            chown -R 999:999 /var/run/postgresql || true
-            chown -R 999:999 /tmp || true
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data
-        - name: tmp
-          mountPath: /tmp
-        - name: run
-          mountPath: /var/run/postgresql
-        securityContext:
-          runAsUser: 0  # Need root to chown
-          runAsNonRoot: false
 
       containers:
       - name: postgresql
@@ -133,10 +113,12 @@ spec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U sonarUser
+            - pg_isready -U sonarUser -d sonarDB
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 6
+
         readinessProbe:
           exec:
             command:
@@ -196,4 +178,3 @@ spec:
     app: sonarqube-postgresql
   # Session affinity for sticky connections
   sessionAffinity: ClientIP
-

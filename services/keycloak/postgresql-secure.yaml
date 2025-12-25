@@ -1,36 +1,38 @@
-# PostgreSQL StatefulSet for SonarQube - SECURITY HARDENED
+# PostgreSQL StatefulSet for Keycloak - SECURITY HARDENED
+# NOTE: Passwords should be managed via External Secrets Operator in production
+
 apiVersion: v1
 kind: Secret
 metadata:
-  name: sonarqube-sonarqube-postgresql
-  namespace: sonarqube
+  name: keycloak-postgresql
+  namespace: keycloak
   labels:
-    app: sonarqube-postgresql
+    app: keycloak-postgresql
 type: Opaque
 stringData:
   # TODO: Use External Secrets Operator or Sealed Secrets
   # Generate strong passwords: openssl rand -base64 32
-  postgres-password: "REDACTED"
-  postgres-user: "sonarUser"
-  postgres-db: "sonarDB"
+  postgres-password: "CHANGE_ME_USE_STRONG_PASSWORD"
+  postgres-user: "keycloak"
+  postgres-db: "keycloak"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: sonarqube-postgresql
-  namespace: sonarqube
+  name: keycloak-postgresql
+  namespace: keycloak
   labels:
-    app: sonarqube-postgresql
+    app: keycloak-postgresql
 spec:
-  serviceName: sonarqube-postgresql
+  serviceName: keycloak-postgresql
   replicas: 1
   selector:
     matchLabels:
-      app: sonarqube-postgresql
+      app: keycloak-postgresql
   template:
     metadata:
       labels:
-        app: sonarqube-postgresql
+        app: keycloak-postgresql
     spec:
       # Security Context - Pod Level
       securityContext:
@@ -40,28 +42,6 @@ spec:
         fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
-
-      # Init container to fix permissions on existing data
-      initContainers:
-      - name: fix-permissions
-        image: postgres:15-alpine
-        command:
-          - sh
-          - -c
-          - |
-            chown -R 999:999 /var/lib/postgresql/data || true
-            chown -R 999:999 /var/run/postgresql || true
-            chown -R 999:999 /tmp || true
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data
-        - name: tmp
-          mountPath: /tmp
-        - name: run
-          mountPath: /var/run/postgresql
-        securityContext:
-          runAsUser: 0  # Need root to chown
-          runAsNonRoot: false
 
       containers:
       - name: postgresql
@@ -90,17 +70,17 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: keycloak-postgresql
               key: postgres-user
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: keycloak-postgresql
               key: postgres-password
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: keycloak-postgresql
               key: postgres-db
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
@@ -133,16 +113,18 @@ spec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U sonarUser
+            - pg_isready -U keycloak -d keycloak
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 6
+
         readinessProbe:
           exec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U sonarUser -d sonarDB
+            - pg_isready -U keycloak -d keycloak
           initialDelaySeconds: 5
           periodSeconds: 10
           timeoutSeconds: 5
@@ -153,7 +135,7 @@ spec:
             command:
             - /bin/sh
             - -c
-            - pg_isready -U sonarUser -d sonarDB
+            - pg_isready -U keycloak -d keycloak
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 5
@@ -169,7 +151,7 @@ spec:
   - metadata:
       name: data
       labels:
-        app: sonarqube-postgresql
+        app: keycloak-postgresql
     spec:
       accessModes:
       - ReadWriteOnce
@@ -181,10 +163,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: sonarqube-postgresql
-  namespace: sonarqube
+  name: keycloak-postgresql
+  namespace: keycloak
   labels:
-    app: sonarqube-postgresql
+    app: keycloak-postgresql
 spec:
   type: ClusterIP
   ports:
@@ -193,7 +175,6 @@ spec:
     protocol: TCP
     name: postgresql
   selector:
-    app: sonarqube-postgresql
+    app: keycloak-postgresql
   # Session affinity for sticky connections
   sessionAffinity: ClientIP
-

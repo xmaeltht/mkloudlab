@@ -1,0 +1,174 @@
+# Flux HelmRelease for Keycloak (Codecentric KeycloakX Helm Chart)
+# PRODUCTION-READY SECURITY-HARDENED CONFIGURATION
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: keycloakx
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: codecentric
+        namespace: flux-system
+      interval: 1h
+  targetNamespace: keycloak
+  install:
+    createNamespace: true
+  values:
+    # Admin Credentials - CHANGE THESE IN PRODUCTION
+    # TODO: Move to External Secrets or Sealed Secrets
+    username: admin
+    password: "CHANGE_ME_IMMEDIATELY"
+
+    # Replicas for high availability
+    replicas: 1  # Increase to 2+ for production HA
+
+    # Service Configuration
+    service:
+      type: ClusterIP
+      port: 8080
+
+    # Ingress Configuration (using Gateway API separately)
+    ingress:
+      enabled: false
+
+    # Database Configuration
+    extraEnv: |
+      - name: KC_DB
+        value: postgres
+      - name: KC_DB_URL_HOST
+        value: keycloak-postgresql
+      - name: KC_DB_URL_DATABASE
+        value: keycloak
+      - name: KC_DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-user
+      - name: KC_DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-password
+      # Production Security Settings
+      - name: KC_PROXY
+        value: edge
+      - name: KC_HTTP_ENABLED
+        value: "true"  # Set to "false" and use HTTPS only in production
+      - name: KC_HOSTNAME_STRICT
+        value: "true"  # MUST be true in production
+      - name: KC_HOSTNAME_STRICT_BACKCHANNEL
+        value: "true"  # MUST be true in production
+      - name: KC_HEALTH_ENABLED
+        value: "true"
+      - name: KC_METRICS_ENABLED
+        value: "true"
+      # Security Headers
+      - name: KC_HTTP_RELATIVE_PATH
+        value: "/"
+      # Logging
+      - name: KC_LOG_LEVEL
+        value: "INFO"  # Use "WARN" or "ERROR" in production
+
+    # Cache Configuration
+    cache:
+      stack: local  # Use distributed cache (ispn/kubernetes) for HA production
+
+    # HTTP Configuration
+    http:
+      relativePath: "/"
+
+    # PRODUCTION MODE - Requires build step
+    # The 'start' command requires the image to be built first
+    # For true production mode, use a custom init container or pre-built image
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+    args:
+      - "start"
+      - "--optimized"  # Use optimized build
+      - "--cache=local"
+      - "--proxy-headers=xforwarded"
+
+    # Security Context - Run as non-root
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: false  # Keycloak needs write access to /opt/keycloak/data
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Resource Limits - REQUIRED for production
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+      limits:
+        cpu: 2000m
+        memory: 2048Mi
+
+    # Health Probes - Production tuned
+    livenessProbe: |
+      httpGet:
+        path: /health/live
+        port: http
+      initialDelaySeconds: 300
+      timeoutSeconds: 5
+      periodSeconds: 30
+      failureThreshold: 3
+
+    readinessProbe: |
+      httpGet:
+        path: /health/ready
+        port: http
+      initialDelaySeconds: 60
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 10
+
+    startupProbe: |
+      httpGet:
+        path: /health/started
+        port: http
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 60
+
+    # Pod Disruption Budget for HA
+    podDisruptionBudget:
+      enabled: false  # Enable for HA: minAvailable: 1
+
+    # Pod Annotations for monitoring
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9000"
+      prometheus.io/path: "/metrics"
+
+    # Node Affinity - Spread pods across nodes for HA
+    affinity: {}
+      # podAntiAffinity:
+      #   preferredDuringSchedulingIgnoredDuringExecution:
+      #     - weight: 100
+      #       podAffinityTerm:
+      #         labelSelector:
+      #           matchLabels:
+      #             app.kubernetes.io/name: keycloakx
+      #         topologyKey: kubernetes.io/hostname

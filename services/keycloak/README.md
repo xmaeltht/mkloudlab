@@ -1,61 +1,162 @@
-# Keycloak Deployment with ArgoCD
+# Keycloak Deployment with Flux
 
-This directory contains the Kubernetes manifests to deploy Keycloak, an open-source identity and access management solution. This application is designed to be deployed and managed by ArgoCD.
+This directory contains the Kubernetes manifests to deploy Keycloak, an open-source identity and access management solution. This application is designed to be deployed and managed by Flux CD.
+
+## Overview
+
+Keycloak is deployed using:
+- **Codecentric KeycloakX Helm Chart** (v2.5.0)
+- **PostgreSQL** as the database backend
+- **Istio Gateway** for ingress traffic
+- **Cert-Manager** for TLS certificate management
+- **Flux HelmRelease** for GitOps deployment
 
 ## Prerequisites
 
--   **ArgoCD:** Must be installed and running in your cluster.
--   **Cert-Manager:** Must be installed and configured to issue certificates for the `keycloak-cert.yaml`.
--   **Ingress Controller:** An Ingress or Gateway controller (like Contour, Istio, or NGINX Ingress) must be running to handle external traffic, as defined in `keycloak-gateway.yaml`.
--   **Persistent Storage:** Your cluster must have a default `StorageClass` for the database persistent volume claim.
+- **Flux CD:** Must be installed and running in your cluster
+- **Cert-Manager:** Must be installed and configured to issue certificates
+- **Istio:** Gateway API controller must be running for ingress
+- **Persistent Storage:** `local-path` storage class for PostgreSQL data
 
-## Deployment via ArgoCD
+## Components
 
-To deploy Keycloak, create an ArgoCD `Application` manifest that points to this directory in your Git repository. ArgoCD will then sync the manifests and manage the deployment.
+### Files
 
-### Example ArgoCD Application Manifest
+- `keycloak-helm.yaml`: Flux HelmRelease with Keycloak configuration
+- `postgresql.yaml`: PostgreSQL StatefulSet, Service, and Secret for Keycloak database
+- `gateway.yaml`: Istio Gateway for external access
+- `certificate.yaml`: Cert-Manager Certificate for TLS
+- `namespace.yaml`: Keycloak namespace definition
+- `kustomization.yaml`: Kustomize configuration for the deployment
 
-Create a file named `keycloak-application.yaml` with the following content:
+### Configuration Details
 
+#### Keycloak Configuration
+
+The Keycloak deployment runs in **production mode** with the following configuration:
+
+**Command:**
 ```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: keycloak
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: 'YOUR_GIT_REPO_URL'  # <-- Replace with your Git repository URL
-    path: keycloak
-    targetRevision: HEAD
-  destination:
-    server: 'https://kubernetes.default.svc'
-    namespace: keycloak
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+command:
+  - "/opt/keycloak/bin/kc.sh"
+  - "start"
+  - "--cache=local"
+  - "--proxy-headers=xforwarded"
+  - "--verbose"
 ```
 
-**Replace `YOUR_GIT_REPO_URL` with the URL of your Git repository.**
+**Database:**
+- Type: PostgreSQL
+- Host: `keycloak-postgresql:5432`
+- Database: `keycloak`
+- Credentials: Stored in environment variables (see `extraEnv`)
 
-### Apply the Application Manifest
+**Proxy Configuration:**
+- Proxy mode: `edge` (for reverse proxy deployments)
+- HTTP enabled: `true`
+- Hostname strict mode: `false` (for development/testing)
 
-Apply the manifest to your cluster. ArgoCD will detect it and begin the deployment.
+**Health Probes:**
+- All probes use the root path (`/`) for compatibility
+- Startup probe: 10s initial delay, 30 attempts
+- Readiness probe: 30s initial delay, 6 failure threshold
+- Liveness probe: 120s initial delay, 3 failure threshold
+
+**Admin Credentials:**
+- Username: `admin`
+- Password: `Keycloak123!` (⚠️ Change after first login!)
+
+#### PostgreSQL Configuration
+
+- Image: `postgres:15-alpine`
+- Storage: 10Gi persistent volume with `local-path` storage class
+- Resources:
+  - Requests: 200m CPU, 256Mi memory
+  - Limits: 500m CPU, 512Mi memory
+
+## Deployment via Flux
+
+Flux automatically deploys Keycloak when the manifests are committed to the Git repository. The HelmRelease will be reconciled every 5 minutes.
+
+### Manual Reconciliation
+
+To trigger an immediate reconciliation:
 
 ```bash
-kubectl apply -f keycloak-application.yaml
+flux reconcile helmrelease keycloak -n keycloak
+```
+
+### Check Deployment Status
+
+```bash
+# Check HelmRelease status
+kubectl get helmrelease -n keycloak keycloak
+
+# Check pods
+kubectl get pods -n keycloak
+
+# Check logs
+kubectl logs -n keycloak keycloak-keycloak-keycloakx-0 -c keycloak
 ```
 
 ## Accessing Keycloak
 
-After deployment, Keycloak will be accessible at the hostname specified in `keycloak-gateway.yaml` (e.g., `keycloak.your-domain.com`). The initial admin username and password are set in the `keycloak.yaml` manifest. It is highly recommended to change the password after your first login.
+After deployment, Keycloak will be accessible at the hostname specified in `gateway.yaml` (e.g., `keycloak.mkloud.lab`).
 
-## Manifests
+### Port-Forward for Local Access
 
--   `keycloak.yaml`: Contains the `Deployment`, `Service`, and `PersistentVolumeClaim` for the Keycloak instance and its PostgreSQL database.
--   `keycloak-cert.yaml`: The `Certificate` resource for securing the Keycloak ingress with a TLS certificate.
--   `keycloak-gateway.yaml`: The `Gateway` or `Ingress` resource that exposes the Keycloak service to external traffic.
+```bash
+kubectl port-forward -n keycloak svc/keycloak-keycloak-keycloakx-http 8080:8080
+```
+
+Then access Keycloak at: http://localhost:8080
+
+## Troubleshooting
+
+### Pod CrashLoopBackOff
+
+If the Keycloak pod is crash-looping, check:
+
+1. **Command configuration**: Ensure the `command` array in `keycloak-helm.yaml` is correctly set
+2. **Database connectivity**: Verify PostgreSQL is running and accessible
+3. **Health probe paths**: Ensure probe paths are compatible with the Keycloak version
+
+### Health Probes Failing
+
+If health probes are failing with 404 errors:
+
+1. Verify the probe paths match available endpoints
+2. Check Istio sidecar is not interfering with health checks
+3. Increase `initialDelaySeconds` to allow more startup time
+
+### Database Connection Issues
+
+If Keycloak cannot connect to PostgreSQL:
+
+1. Verify the PostgreSQL pod is running: `kubectl get pods -n keycloak`
+2. Check the database credentials in the secret
+3. Verify the service DNS resolution: `kubectl get svc -n keycloak`
+
+## Security Considerations
+
+⚠️ **Important Security Notes:**
+
+1. **Change Default Password:** The default admin password `Keycloak123!` should be changed immediately after first login
+2. **Enable HTTPS:** In production, ensure TLS is properly configured via cert-manager
+3. **Database Credentials:** Consider using external secrets management for sensitive data
+4. **Hostname Configuration:** Enable strict hostname checking (`KC_HOSTNAME_STRICT=true`) in production
+
+## Configuration Updates
+
+To update the Keycloak configuration:
+
+1. Edit `keycloak-helm.yaml`
+2. Commit and push changes to Git
+3. Flux will automatically reconcile the changes
+4. Or manually trigger: `flux reconcile helmrelease keycloak -n keycloak`
+
+## References
+
+- [Keycloak Documentation](https://www.keycloak.org/documentation)
+- [Codecentric KeycloakX Helm Chart](https://github.com/codecentric/helm-charts/tree/master/charts/keycloakx)
+- [Flux CD Documentation](https://fluxcd.io/docs/)
