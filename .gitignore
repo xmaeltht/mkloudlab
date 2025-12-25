@@ -32,3 +32,27 @@ istio-*/
 troubleshoot/
 
 *.vagrant/
+.vagrant/
+
+# Kubernetes secrets and sensitive files
+*-secret.yaml
+*secret*.yaml
+*.key
+*.pem
+*.crt
+kubeconfig
+*.kubeconfig
+
+# Backup files
+*-backup.yaml
+*.backup
+*~
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Helm values with secrets (use *-values-secret.yaml pattern)
+*-values-secret.yaml
+*-secret-values.yaml
