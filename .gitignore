@@ -36,12 +36,16 @@ troubleshoot/
 
 # Kubernetes secrets and sensitive files
 *-secret.yaml
-*secret*.yaml
 *.key
 *.pem
 *.crt
 kubeconfig
 *.kubeconfig
+
+# But allow External Secrets CRDs (these don't contain actual secrets)
+!services/*/external-secrets.yaml
+!services/*/secretstore.yaml
+!infrastructure/external-secrets/*.yaml
 
 # Backup files
 *-backup.yaml
