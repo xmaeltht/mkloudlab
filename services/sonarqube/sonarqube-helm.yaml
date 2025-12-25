@@ -24,13 +24,16 @@ spec:
       repository: sonarqube
       pullPolicy: IfNotPresent
     
-    # Monitoring passcode required for probes to work
-    monitoringPasscode: REDACTED
-    
-    # Admin credentials
+    # Monitoring passcode - Using External Secrets
+    monitoringPasscodeSecretName: sonarqube-monitoring
+    monitoringPasscodeSecretKey: passcode
+
+    # Admin credentials - Using External Secrets
     account:
-      adminPassword: REDACTED
-      currentAdminPassword: admin
+      adminPasswordSecretName: sonarqube-admin
+      adminPasswordSecretKey: password
+      currentAdminPasswordSecretName: sonarqube-admin
+      currentAdminPasswordSecretKey: current-password
     
     # Service configuration
     service:
@@ -75,12 +78,13 @@ spec:
     postgresql:
       enabled: false
     
-    # Use external PostgreSQL database
+    # Use external PostgreSQL database - Using External Secrets
     jdbcOverwrite:
       enabled: true
       jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarDB"
-      jdbcUsername: "REDACTED"
-      jdbcPassword: "REDACTED"
+      jdbcSecretName: sonarqube-postgresql
+      jdbcSecretPasswordKey: postgres-password
+      jdbcSecretUsernameKey: postgres-user
     
     # JVM options
     jvmOpts: "-Xmx2G -Xms512m"

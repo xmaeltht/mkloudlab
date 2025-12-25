@@ -19,9 +19,9 @@ spec:
   install:
     createNamespace: true
   values:
-    # Admin Credentials
-    username: admin
-    password: "REDACTED"
+    # Admin Credentials - Using External Secrets
+    existingSecret: "keycloak-admin"
+    existingSecretKey: "password"
 
     # Service Configuration
     service:
@@ -44,9 +44,15 @@ spec:
       - name: KC_DB_URL_DATABASE
         value: keycloak
       - name: KC_DB_USERNAME
-        value: keycloak
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-user
       - name: KC_DB_PASSWORD
-        value: REDACTED
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-password
       - name: KC_PROXY
         value: edge
       - name: KC_HTTP_ENABLED

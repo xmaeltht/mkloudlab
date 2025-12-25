@@ -1,18 +1,7 @@
 # PostgreSQL StatefulSet for Keycloak - SECURITY HARDENED
-apiVersion: v1
-kind: Secret
-metadata:
-  name: keycloak-postgresql
-  namespace: keycloak
-  labels:
-    app: keycloak-postgresql
-type: Opaque
-stringData:
-  # TODO: Use External Secrets Operator or Sealed Secrets
-  # Generate strong passwords: openssl rand -base64 32
-  postgres-password: "Keycloak123!"
-  postgres-user: "keycloak"
-  postgres-db: "keycloak"
+# NOTE: Secrets are managed by External Secrets Operator
+# See services/keycloak/external-secrets.yaml for secret configuration
+# Actual secret values are stored in secrets-store namespace
 ---
 apiVersion: apps/v1
 kind: StatefulSet
