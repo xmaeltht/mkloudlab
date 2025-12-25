@@ -48,7 +48,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: keycloak
+      app.kubernetes.io/name: keycloak
   policyTypes:
     - Ingress
     - Egress
@@ -95,7 +95,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: keycloak
+              app.kubernetes.io/name: keycloak
       ports:
         - protocol: TCP
           port: 5432

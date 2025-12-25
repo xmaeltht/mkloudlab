@@ -1,4 +1,4 @@
-# Flux HelmRelease for Keycloak (Codecentric Keycloak Helm Chart)
+# Flux HelmRelease for Keycloak (Codecentric KeycloakX Helm Chart)
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -8,86 +8,52 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: keycloak
-      version: 18.10.0
+      chart: keycloakx
+      version: 2.5.0
       sourceRef:
         kind: HelmRepository
         name: codecentric
         namespace: flux-system
       interval: 1h
-  values:
-    # Image configuration
-    image:
-      repository: quay.io/keycloak/keycloak
-      tag: "26.4.5"
-      pullPolicy: IfNotPresent
-
-    # Replica count
-    replicas: 1
-
-    # Disable built-in PostgreSQL (using Bitnami, which user doesn't want)
-    postgresql:
-      enabled: false
-
-    # Using args for Keycloak configuration
-    command:
-      - "/opt/keycloak/bin/kc.sh"
-    args:
-      - "start"
-      - "--http-enabled=true"
-      - "--hostname-strict=false"
-      - "--health-enabled=true"
-      - "--metrics-enabled=true"
-      - "--db=postgres"
-      - "--db-url-host=postgresql"
-      - "--db-username=keycloak"
-      - "--db-password=Keycloak123!"
-      - "--db-url-database=keycloak"
-
-    # Service configuration
-    service:
-      type: ClusterIP
-
-    # Ingress disabled - using Gateway API
-    ingress:
-      enabled: false
-
-    # Security Context
-    podSecurityContext:
-      fsGroup: 1001
-    securityContext:
-      runAsUser: 1001
-      runAsNonRoot: true
-
-    # Disable Istio sidecar injection (Istio proxy is failing startup probe)
-    podAnnotations:
-      sidecar.istio.io/inject: "false"
-
-    # Fix health check probes for Keycloak 26.4.5 (no /auth prefix)
-    startupProbe: |
-      httpGet:
-        path: /realms/master
-        port: http
-      initialDelaySeconds: 60
-      timeoutSeconds: 5
-      failureThreshold: 60
-      periodSeconds: 10
-
-    readinessProbe: |
-      httpGet:
-        path: /realms/master
-        port: http
-      initialDelaySeconds: 60
-      timeoutSeconds: 5
-      periodSeconds: 10
-
-    livenessProbe: |
-      httpGet:
-        path: /realms/master
-        port: http
-      initialDelaySeconds: 60
-      timeoutSeconds: 5
-      periodSeconds: 10
   targetNamespace: keycloak
   install:
     createNamespace: true
+  values:
+    # Admin Credentials
+    username: admin
+    password: "REDACTED"
+
+    # Service Configuration
+    service:
+      type: ClusterIP
+      port: 8080
+
+    # Ingress Configuration (using Gateway API separately)
+    ingress:
+      enabled: false
+
+    # Database Configuration
+    # Note: Codecentric chart expects external database or separate PostgreSQL deployment
+    # Configure environment variables for database connection
+    extraEnv:
+      - name: KC_DB
+        value: postgres
+      - name: KC_DB_URL_HOST
+        value: keycloak-postgresql
+      - name: KC_DB_URL_DATABASE
+        value: keycloak
+      - name: KC_DB_USERNAME
+        value: keycloak
+      - name: KC_DB_PASSWORD
+        value: REDACTED
+      - name: KC_PROXY
+        value: edge
+      - name: KC_HTTP_ENABLED
+        value: "true"
+      - name: KC_HOSTNAME_STRICT
+        value: "false"
+      - name: KC_HOSTNAME_STRICT_BACKCHANNEL
+        value: "false"
+
+    # Production Mode
+    commandArgs: "--proxy-headers=xforwarded"

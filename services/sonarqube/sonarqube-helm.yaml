@@ -16,11 +16,7 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    # Enable community edition
-    community:
-      enabled: true
-      buildNumber: "10.7.0-community"
-    # Image configuration
+    # Image configuration (Community Edition)
     image:
       repository: sonarqube
       tag: "10.7.0-community"
@@ -60,7 +56,7 @@ spec:
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1000
-      runAsGroup: 0
+      runAsGroup: 1000
       seccompProfile:
         type: RuntimeDefault
       capabilities:
@@ -98,12 +94,12 @@ spec:
       initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
-      timeoutSeconds: 1
+      timeoutSeconds: 10
     livenessProbe:
       initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
-      timeoutSeconds: 1
+      timeoutSeconds: 10
   targetNamespace: sonarqube
   install:
     createNamespace: true
