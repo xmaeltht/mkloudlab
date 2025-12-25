@@ -16,31 +16,39 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    # Image configuration (Community Edition)
+    # Edition (Community Edition)
+    edition: "community"
+    
+    # Image configuration
     image:
       repository: sonarqube
-      tag: "10.7.0-community"
       pullPolicy: IfNotPresent
+    
     # Monitoring passcode required for probes to work
     monitoringPasscode: REDACTED
+    
     # Admin credentials
     account:
       adminPassword: REDACTED
       currentAdminPassword: admin
+    
     # Service configuration
     service:
       type: ClusterIP
       externalPort: 9000
       internalPort: 9000
+    
     # Ingress disabled - using Gateway API
     ingress:
       enabled: false
+    
     # Persistence
     persistence:
       enabled: true
       size: 20Gi
       storageClass: local-path
       accessMode: ReadWriteOnce
+    
     # Resources
     resources:
       requests:
@@ -49,46 +57,40 @@ spec:
       limits:
         cpu: 800m
         memory: 6144M
-    # Security context
+    
+    # Security context (using defaults compatible with restricted pod security)
     securityContext:
-      fsGroup: 1000
+      fsGroup: 0
     containerSecurityContext:
       allowPrivilegeEscalation: false
       runAsNonRoot: true
       runAsUser: 1000
-      runAsGroup: 1000
+      runAsGroup: 0
       seccompProfile:
         type: RuntimeDefault
       capabilities:
         drop: ["ALL"]
-    # Database configuration - PostgreSQL subchart
+    
+    # Database configuration - Disable Bitnami PostgreSQL subchart
     postgresql:
+      enabled: false
+    
+    # Use external PostgreSQL database
+    jdbcOverwrite:
       enabled: true
-      image:
-        repository: postgres
-        tag: "18"
-      postgresqlUsername: sonarUser
-      postgresqlPassword: REDACTED
-      postgresqlDatabase: sonarDB
-      persistence:
-        enabled: true
-        size: 10Gi
-        storageClass: local-path
-        accessMode: ReadWriteOnce
-      resources:
-        limits:
-          cpu: 2
-          memory: 2Gi
-        requests:
-          cpu: 100m
-          memory: 200Mi
+      jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarDB"
+      jdbcUsername: "REDACTED"
+      jdbcPassword: "REDACTED"
+    
     # JVM options
     jvmOpts: "-Xmx2G -Xms512m"
     jvmCeOpts: "-Xmx512m -Xms128m"
+    
     # Monitoring
     prometheusMonitoring:
       podMonitor:
         enabled: false
+    
     # Readiness and liveness probes
     readinessProbe:
       initialDelaySeconds: 60

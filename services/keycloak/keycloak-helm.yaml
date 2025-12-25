@@ -35,7 +35,8 @@ spec:
     # Database Configuration
     # Note: Codecentric chart expects external database or separate PostgreSQL deployment
     # Configure environment variables for database connection
-    extraEnv:
+    # Using YAML literal block scalar format (the chart expects a string that will be parsed as YAML)
+    extraEnv: >-
       - name: KC_DB
         value: postgres
       - name: KC_DB_URL_HOST
@@ -56,4 +57,6 @@ spec:
         value: "false"
 
     # Production Mode
-    commandArgs: "--proxy-headers=xforwarded"
+    args:
+      - start
+      - --proxy-headers=xforwarded
