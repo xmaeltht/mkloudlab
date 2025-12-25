@@ -36,7 +36,7 @@ spec:
     # Note: Codecentric chart expects external database or separate PostgreSQL deployment
     # Configure environment variables for database connection
     # Using YAML literal block scalar format (the chart expects a string that will be parsed as YAML)
-    extraEnv: >-
+    extraEnv: |
       - name: KC_DB
         value: postgres
       - name: KC_DB_URL_HOST
@@ -56,7 +56,10 @@ spec:
       - name: KC_HOSTNAME_STRICT_BACKCHANNEL
         value: "false"
 
-    # Production Mode
-    args:
-      - start
-      - --proxy-headers=xforwarded
+    # Cache Configuration
+    cache:
+      stack: local
+
+    # HTTP Configuration
+    http:
+      relativePath: "/"
