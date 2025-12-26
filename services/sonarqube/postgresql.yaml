@@ -79,17 +79,17 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: sonarqube-postgresql
               key: postgres-user
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: sonarqube-postgresql
               key: postgres-password
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
-              name: sonarqube-sonarqube-postgresql
+              name: sonarqube-postgresql
               key: postgres-db
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
