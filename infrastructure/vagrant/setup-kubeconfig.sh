@@ -24,43 +24,22 @@ if [ ! -d "$KUBECONFIG_DIR" ]; then
     mkdir -p "$KUBECONFIG_DIR"
 fi
 
-# Check if controller is reachable
-echo "Checking connectivity to controller ($CONTROLLER_IP)..."
-MAX_RETRIES=5
-RETRY_COUNT=0
-CONNECTED=false
-
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if ping -c 1 "$CONTROLLER_IP" >/dev/null 2>&1; then
-        CONNECTED=true
-        break
-    else
-        echo "   Attempt $((RETRY_COUNT+1))/$MAX_RETRIES: Controller not reachable yet. Retrying in 5s..."
-        sleep 5
-        RETRY_COUNT=$((RETRY_COUNT+1))
-    fi
-done
-
-if [ "$CONNECTED" = false ]; then
-    echo "❌ Error: Cannot reach controller at $CONTROLLER_IP after $MAX_RETRIES attempts"
-    echo "   Make sure the cluster is running: task vagrant:up"
+# Check if kcontroller is running
+echo "Checking if kcontroller is running..."
+if ! vagrant status kcontroller | grep -q "running"; then
+    echo "❌ Error: kcontroller VM is not running."
+    echo "   Run: task vagrant:up"
     exit 1
 fi
 
-# Install sshpass if not available (for macOS with Homebrew)
-if ! command -v sshpass &> /dev/null; then
-    if command -v brew &> /dev/null; then
-        echo "🍺 Installing sshpass via Homebrew..."
-        brew install hudochenkov/sshpass/sshpass
-    else
-        echo "❌ Error: sshpass not available and Homebrew not installed."
-        exit 1
-    fi
-fi
-
-# Copy kubeconfig from controller VM to a temporary file
+# Copy kubeconfig from controller VM using vagrant ssh (bypasses network IP issues)
 echo "📥 Downloading kubeconfig from controller..."
-sshpass -p "$CONTROLLER_PASSWORD" scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "$CONTROLLER_USER@$CONTROLLER_IP:/etc/kubernetes/admin.conf" "$KUBECONFIG_NEW"
+vagrant ssh kcontroller -c "sudo cat /etc/kubernetes/admin.conf" > "$KUBECONFIG_NEW"
+
+if [ ! -s "$KUBECONFIG_NEW" ]; then
+    echo "❌ Error: Failed to retrieve kubeconfig or file is empty."
+    exit 1
+fi
 
 # Set permissions
 chmod 600 "$KUBECONFIG_NEW"
@@ -75,8 +54,9 @@ export KUBECONFIG="$KUBECONFIG_NEW"
 sed -i.bak2 '/certificate-authority-data:/d' "$KUBECONFIG_NEW"
 
 # Add insecure-skip-tls-verify to the cluster config
-# We match the server line (which now has the IP) to append the insecure flag
-awk -v ip="$CONTROLLER_IP" '$0 ~ "server: https://" ip ":6443" { print; print "    insecure-skip-tls-verify: true"; next } 1' "$KUBECONFIG_NEW" > "${KUBECONFIG_NEW}.tmp" && mv "${KUBECONFIG_NEW}.tmp" "$KUBECONFIG_NEW"
+# We replace the private IP with localhost since port 6443 is forwarded
+# And add insecure-skip-tls-verify
+awk -v ip="$CONTROLLER_IP" '$0 ~ "server: https://" ip ":6443" { print "    server: https://127.0.0.1:6443"; print "    insecure-skip-tls-verify: true"; next } 1' "$KUBECONFIG_NEW" > "${KUBECONFIG_NEW}.tmp" && mv "${KUBECONFIG_NEW}.tmp" "$KUBECONFIG_NEW"
 
 # Clean up sed backups
 rm -f "${KUBECONFIG_NEW}.bak" "${KUBECONFIG_NEW}.bak2" "${KUBECONFIG_NEW}.bak3"

@@ -1,0 +1,111 @@
+# Flux HelmRelease for SonarQube
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: sonarqube
+      version: 10.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: sonarqube
+        namespace: flux-system
+      interval: 1h
+  values:
+    # Edition (Community Edition)
+    edition: "community"
+    
+    # Image configuration
+    image:
+      repository: sonarqube
+      pullPolicy: IfNotPresent
+    
+    # Monitoring passcode - Using External Secrets
+    monitoringPasscodeSecretName: sonarqube-monitoring
+    monitoringPasscodeSecretKey: passcode
+
+    # Admin credentials - Using External Secrets
+    account:
+      adminPasswordSecretName: sonarqube-admin
+      adminPasswordSecretKey: password
+      currentAdminPasswordSecretName: sonarqube-admin
+      currentAdminPasswordSecretKey: currentPassword
+    
+    # Service configuration
+    service:
+      type: ClusterIP
+      externalPort: 9000
+      internalPort: 9000
+    
+    # Ingress disabled - using Gateway API
+    ingress:
+      enabled: false
+    
+    # Persistence
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: local-path
+      accessMode: ReadWriteOnce
+    
+    # Resources
+    resources:
+      requests:
+        cpu: 400m
+        memory: 2048M
+      limits:
+        cpu: 800m
+        memory: 6144M
+    
+    # Security context (using defaults compatible with restricted pod security)
+    securityContext:
+      fsGroup: 0
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 0
+      seccompProfile:
+        type: RuntimeDefault
+      capabilities:
+        drop: ["ALL"]
+    
+    # Database configuration - Disable Bitnami PostgreSQL subchart
+    postgresql:
+      enabled: false
+    
+    # Use external PostgreSQL database - Using External Secrets
+    jdbcOverwrite:
+      enabled: true
+      jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarDB"
+      jdbcSecretName: sonarqube-postgresql
+      jdbcSecretPasswordKey: postgres-password
+      jdbcSecretUsernameKey: postgres-user
+    
+    # JVM options
+    jvmOpts: "-Xmx2G -Xms512m"
+    jvmCeOpts: "-Xmx512m -Xms128m"
+    
+    # Monitoring
+    prometheusMonitoring:
+      podMonitor:
+        enabled: false
+    
+    # Readiness and liveness probes
+    readinessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 10
+    livenessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 10
+  targetNamespace: sonarqube
+  install:
+    createNamespace: true

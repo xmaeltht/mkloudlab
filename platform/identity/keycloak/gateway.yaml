@@ -1,8 +1,8 @@
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
-  name: tempo-gateway
-  namespace: observability
+  name: keycloak-gateway
+  namespace: keycloak
   annotations:
     # Configure the gateway service to use ClusterIP instead of LoadBalancer
     networking.istio.io/service-type: "ClusterIP"
@@ -12,24 +12,24 @@ spec:
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: tempo.maelkloud.com
+      hostname: keycloak.maelkloud.com
       tls:
         mode: Terminate
         certificateRefs:
-          - name: tempo-cert
+          - name: keycloak-cert
             kind: Secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
-  name: tempo-route
-  namespace: observability
+  name: keycloak-route
+  namespace: keycloak
 spec:
   parentRefs:
-    - name: tempo-gateway
+    - name: keycloak-gateway
   hostnames:
-    - tempo.maelkloud.com
+    - keycloak.maelkloud.com
   rules:
     - backendRefs:
-        - name: tempo
-          port: 3200
+        - name: keycloak-keycloak-keycloakx-http
+          port: 80
