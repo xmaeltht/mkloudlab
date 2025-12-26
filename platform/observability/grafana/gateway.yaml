@@ -3,6 +3,9 @@ kind: Gateway
 metadata:
   name: grafana-gateway
   namespace: observability
+  annotations:
+    # Configure the gateway service to use ClusterIP instead of LoadBalancer
+    networking.istio.io/service-type: "ClusterIP"
 spec:
   gatewayClassName: istio
   listeners:

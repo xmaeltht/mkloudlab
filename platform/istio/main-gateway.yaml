@@ -4,6 +4,9 @@ kind: Gateway
 metadata:
   name: main-gateway
   namespace: istio-system
+  annotations:
+    # Configure the gateway service to use ClusterIP instead of LoadBalancer
+    networking.istio.io/service-type: "ClusterIP"
 spec:
   gatewayClassName: istio
   listeners:
@@ -31,5 +34,11 @@ spec:
             kind: Secret
             namespace: observability
           - name: prometheus-cert
+            kind: Secret
+            namespace: observability
+          - name: loki-cert
+            kind: Secret
+            namespace: observability
+          - name: tempo-cert
             kind: Secret
             namespace: observability

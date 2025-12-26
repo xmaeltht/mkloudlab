@@ -43,9 +43,11 @@ kubeconfig
 *.kubeconfig
 
 # But allow External Secrets CRDs (these don't contain actual secrets)
-!services/*/external-secrets.yaml
-!services/*/secretstore.yaml
-!infrastructure/external-secrets/*.yaml
+!platform/identity/*/external-secrets.yaml
+!platform/identity/*/secretstore.yaml
+!platform/devtools/*/external-secrets.yaml
+!platform/devtools/*/secretstore.yaml
+!platform/external-secrets/*.yaml
 
 # Backup files
 *-backup.yaml

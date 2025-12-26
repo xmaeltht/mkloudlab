@@ -64,10 +64,9 @@ Configure sensitive resources that are not in Git.
 
 | Directory | Description |
 | --------- | ----------- |
-| `platform/` | **Flux Configuration**: `flux/apps` contains all HelmReleases/Kustomizations. |
+| `platform/` | **Core Platform**: Flux, Istio, Observability, Identity (Keycloak), DevTools (SonarQube) |
 | `platform/observability/` | **Consolidated Observability Stack**: Prometheus, Grafana, Alloy, Tempo (all in `observability` namespace). |
-| `services/` | **Workloads**: Keycloak, SonarQube, etc. |
-| `infrastructure/vagrant/` | **Local Env**: Vagrantfile and bootstrap scripts. |
+| `infrastructure/` | **IaC**: Terraform (Cloudflare) and Vagrant (local VMs) |
 | `docs/` | **Documentation**: Runbooks and Tasks reference. |
 
 ## 🛠 Observability
@@ -91,3 +90,4 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy-gateway.observability:4318
 ## 📚 Documentation
 - [Available Tasks](./docs/reference/TASKS.md)
 - [Security Features](./docs/security/SECURITY_ENHANCEMENTS.md)
+- [Gateway API with ClusterIP Setup](./docs/guides/GATEWAY_API_CLUSTERIP_SETUP.md)
