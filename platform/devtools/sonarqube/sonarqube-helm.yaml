@@ -54,8 +54,7 @@ spec:
     
     # Use emptyDir for tmp (chart native support)
     emptyDir:
-      tmp:
-        sizeLimit: 2Gi
+      sizeLimit: 2Gi
     
     # Disable shared memory file creation (use HTTP instead for IPC)
     env:
@@ -74,20 +73,27 @@ spec:
     # JVM options - Increased heap for stability
     jvmOpts: "-Xmx2G -Xms512m"
     jvmCeOpts: "-Xmx512m -Xms128m"
-    
-    # Security context - Simplified to allow shared memory IPC
-    securityContext:
-      fsGroup: 1000
+
+    # Container security context - Run as non-root for Elasticsearch
     containerSecurityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
       allowPrivilegeEscalation: false
-      capabilities:
-        drop:
-          - ALL
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 0
       seccompProfile:
         type: RuntimeDefault
-    
+
+    # Pod security context
+    securityContext:
+      fsGroup: 0
+
+    # Init containers security context - Allow network access
+    initContainers:
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: false
+        runAsUser: 0
+
     # Database configuration - Disable Bitnami PostgreSQL subchart
     postgresql:
       enabled: false
