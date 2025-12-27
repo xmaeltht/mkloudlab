@@ -102,6 +102,7 @@ spec:
       app.kubernetes.io/name: loki
   policyTypes:
   - Ingress
+  - Egress
   ingress:
   # Allow from Istio Gateway (main gateway in istio-system)
   - from:
@@ -131,6 +132,27 @@ spec:
     ports:
     - protocol: TCP
       port: 3100
+  egress:
+  # Allow egress to same namespace (for internal communication)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: observability
+    ports:
+    - protocol: TCP
+      port: 3100
+  # Allow HTTPS egress for external connections (usage reporting, etc.)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80
+  # Allow DNS
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
 
 ---
 # Allow ingress to Tempo from Istio Gateway

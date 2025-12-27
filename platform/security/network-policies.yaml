@@ -179,7 +179,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: observability
-
       ports:
         - protocol: TCP
           port: 4317
@@ -205,6 +204,8 @@ spec:
           port: 3100
     - to: []
       ports:
+        - protocol: TCP
+          port: 443
         - protocol: UDP
           port: 53
 ---
