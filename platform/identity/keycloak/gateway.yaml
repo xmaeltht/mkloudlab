@@ -28,6 +28,7 @@ spec:
   parentRefs:
     - name: main-gateway
       namespace: istio-system
+      sectionName: https-keycloak
   hostnames:
     - keycloak.maelkloud.com
   rules:
