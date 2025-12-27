@@ -95,34 +95,22 @@ spec:
       podMonitor:
         enabled: false
     
-    # Readiness and liveness probes
+    # Readiness and liveness probes - extending timeouts for slow startup
     startupProbe:
-      httpGet:
-        path: /api/system/status
-        port: 9000
-        scheme: HTTP
       initialDelaySeconds: 30
       periodSeconds: 10
       failureThreshold: 30  # 30 * 10 = 300s (5 minutes) max startup time
-      timeoutSeconds: 5
+      timeoutSeconds: 10
     readinessProbe:
-      httpGet:
-        path: /api/system/status
-        port: 9000
-        scheme: HTTP
-      initialDelaySeconds: 10
-      periodSeconds: 30
-      failureThreshold: 3
-      timeoutSeconds: 5
-    livenessProbe:
-      httpGet:
-        path: /api/system/status
-        port: 9000
-        scheme: HTTP
-      initialDelaySeconds: 120
+      initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
-      timeoutSeconds: 5
+      timeoutSeconds: 10
+    livenessProbe:
+      initialDelaySeconds: 180  # 3 minutes
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 10
   targetNamespace: sonarqube
   install:
     createNamespace: true
