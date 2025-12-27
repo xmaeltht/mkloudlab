@@ -28,6 +28,7 @@ spec:
   parentRefs:
     - name: main-gateway
       namespace: istio-system
+      sectionName: https-alloy
   hostnames:
     - alloy.maelkloud.com
   rules:
