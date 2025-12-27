@@ -28,6 +28,7 @@ spec:
   parentRefs:
     - name: main-gateway
       namespace: istio-system
+      sectionName: https-grafana
   hostnames:
     - grafana.maelkloud.com
   rules:
