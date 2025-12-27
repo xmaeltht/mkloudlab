@@ -52,6 +52,27 @@ spec:
       storageClass: local-path
       accessMode: ReadWriteOnce
     
+    # Add emptyDir volumes for tmp directories (required for shared memory with restricted security context)
+    emptyDir:
+      tmp:
+        sizeLimit: 1Gi
+    initContainers:
+      image: busybox:1.36
+      command: ['sh', '-c', 'chown -R 1000:0 /tmp']
+      securityContext:
+        runAsUser: 0
+        runAsNonRoot: false
+      volumeMounts:
+        - name: tmp-dir
+          mountPath: /tmp
+    extraVolumes:
+      - name: tmp-dir
+        emptyDir:
+          sizeLimit: 1Gi
+    extraVolumeMounts:
+      - name: tmp-dir
+        mountPath: /tmp
+    
     # Resources
     resources:
       requests:
