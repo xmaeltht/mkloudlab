@@ -11,114 +11,114 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-    - name: http
-      port: 80
-      protocol: HTTP
-      hostname: "*.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-    - name: https
-      port: 443
-      protocol: HTTPS
-      hostname: "*.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: argocd-cert
-            kind: Secret
-            namespace: argocd
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: "*.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: "*.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: argocd-cert
+          kind: Secret
+          namespace: argocd
     - name: https-keycloak
-      port: 443
-      protocol: HTTPS
-      hostname: "keycloak.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: keycloak-cert
-            kind: Secret
-            namespace: keycloak
+    port: 443
+    protocol: HTTPS
+    hostname: "keycloak.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: keycloak-cert
+          kind: Secret
+          namespace: keycloak
     - name: https-sonarqube
-      port: 443
-      protocol: HTTPS
-      hostname: "sonarqube.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: sonarqube-cert
-            kind: Secret
-            namespace: sonarqube
+    port: 443
+    protocol: HTTPS
+    hostname: "sonarqube.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: sonarqube-cert
+          kind: Secret
+          namespace: sonarqube
     - name: https-grafana
-      port: 443
-      protocol: HTTPS
-      hostname: "grafana.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: grafana-cert
-            kind: Secret
-            namespace: observability
+    port: 443
+    protocol: HTTPS
+    hostname: "grafana.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: grafana-cert
+          kind: Secret
+          namespace: observability
     - name: https-prometheus
-      port: 443
-      protocol: HTTPS
-      hostname: "prometheus.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: prometheus-cert
-            kind: Secret
-            namespace: observability
+    port: 443
+    protocol: HTTPS
+    hostname: "prometheus.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: prometheus-cert
+          kind: Secret
+          namespace: observability
     - name: https-loki
-      port: 443
-      protocol: HTTPS
-      hostname: "loki.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: loki-cert
-            kind: Secret
-            namespace: observability
+    port: 443
+    protocol: HTTPS
+    hostname: "loki.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: loki-cert
+          kind: Secret
+          namespace: observability
     - name: https-tempo
-      port: 443
-      protocol: HTTPS
-      hostname: "tempo.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: tempo-cert
-            kind: Secret
-            namespace: observability
+    port: 443
+    protocol: HTTPS
+    hostname: "tempo.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: tempo-cert
+          kind: Secret
+          namespace: observability
     - name: https-alloy
-      port: 443
-      protocol: HTTPS
-      hostname: "alloy.maelkloud.com"
-      allowedRoutes:
-        namespaces:
-          from: All
-      tls:
-        mode: Terminate
-        certificateRefs:
-          - name: alloy-cert
-            kind: Secret
-            namespace: observability
+    port: 443
+    protocol: HTTPS
+    hostname: "alloy.maelkloud.com"
+    allowedRoutes:
+      namespaces:
+        from: All
+    tls:
+      mode: Terminate
+      certificateRefs:
+        - name: alloy-cert
+          kind: Secret
+          namespace: observability

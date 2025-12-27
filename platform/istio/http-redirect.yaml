@@ -7,14 +7,14 @@ metadata:
   namespace: istio-system
 spec:
   parentRefs:
-    - name: main-gateway
-      namespace: istio-system
-      sectionName: http  # Only apply to HTTP listener
+  - name: main-gateway
+    namespace: istio-system
+    sectionName: http  # Only apply to HTTP listener
   hostnames:
-    - "*.maelkloud.com"
+  - "*.maelkloud.com"
   rules:
-    - filters:
-        - type: RequestRedirect
-          requestRedirect:
-            scheme: https
-            statusCode: 301
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        statusCode: 301

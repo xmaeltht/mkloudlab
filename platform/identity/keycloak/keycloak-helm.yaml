@@ -76,9 +76,9 @@ spec:
     # Production Mode
     command:
     - "/opt/keycloak/bin/kc.sh"
-      - "start"
-      - "--cache=local"
-      - "--proxy-headers=xforwarded"
+    - "start"
+    - "--cache=local"
+    - "--proxy-headers=xforwarded"
 
     # Security Context - Pod Level
     securityContext:
