@@ -26,7 +26,8 @@ metadata:
   namespace: sonarqube
 spec:
   parentRefs:
-    - name: sonarqube-gateway
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
     - sonarqube.maelkloud.com
   rules:

@@ -26,10 +26,11 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-    - name: prometheus-gateway
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
     - prometheus.maelkloud.com
   rules:
     - backendRefs:
-        - name: prometheus-server
-          port: 80
+        - name: prometheus-kube-prometheus-prometheus
+          port: 9090

@@ -15,10 +15,16 @@ spec:
       port: 80
       protocol: HTTP
       hostname: "*.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
     - name: https
       port: 443
       protocol: HTTPS
       hostname: "*.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -29,6 +35,9 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "keycloak.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -39,6 +48,9 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "sonarqube.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -49,6 +61,9 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "grafana.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -59,6 +74,9 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "prometheus.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -69,6 +87,9 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "loki.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
@@ -79,9 +100,25 @@ spec:
       port: 443
       protocol: HTTPS
       hostname: "tempo.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
       tls:
         mode: Terminate
         certificateRefs:
           - name: tempo-cert
+            kind: Secret
+            namespace: observability
+    - name: https-alloy
+      port: 443
+      protocol: HTTPS
+      hostname: "alloy.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: alloy-cert
             kind: Secret
             namespace: observability

@@ -26,7 +26,8 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-    - name: grafana-gateway
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
     - grafana.maelkloud.com
   rules:

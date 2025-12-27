@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: alloy-cert
+  namespace: observability
+spec:
+  secretName: alloy-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - alloy.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
+
