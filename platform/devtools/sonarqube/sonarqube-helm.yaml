@@ -18,12 +18,12 @@ spec:
   values:
     # Edition (Community Edition)
     edition: "community"
-    
+
     # Image configuration
     image:
       repository: sonarqube
       pullPolicy: IfNotPresent
-    
+
     # Monitoring passcode - Using External Secrets
     monitoringPasscodeSecretName: sonarqube-monitoring
     monitoringPasscodeSecretKey: passcode
@@ -34,33 +34,33 @@ spec:
       adminPasswordSecretKey: password
       currentAdminPasswordSecretName: sonarqube-admin
       currentAdminPasswordSecretKey: currentPassword
-    
+
     # Service configuration
     service:
       type: ClusterIP
       externalPort: 9000
       internalPort: 9000
-    
+
     # Ingress disabled - using Gateway API
     ingress:
       enabled: false
-    
+
     # Persistence
     persistence:
       enabled: true
       size: 20Gi
       storageClass: local-path
       accessMode: ReadWriteOnce
-    
+
     # Use emptyDir for tmp (chart native support)
     emptyDir:
       sizeLimit: 2Gi
-    
+
     # Disable shared memory file creation (use HTTP instead for IPC)
     env:
       - name: SONAR_WEB_JAVAADDITIONALOPTS
         value: "-Dsonar.web.javaRestarts.pause=1000"
-    
+
     # Resources - Increased for better startup stability
     resources:
       requests:
@@ -69,7 +69,7 @@ spec:
       limits:
         cpu: 800m
         memory: 6144Mi
-    
+
     # JVM options - Increased heap for stability
     jvmOpts: "-Xmx2G -Xms512m"
     jvmCeOpts: "-Xmx512m -Xms128m"
@@ -97,7 +97,7 @@ spec:
     # Database configuration - Disable Bitnami PostgreSQL subchart
     postgresql:
       enabled: false
-    
+
     # Use external PostgreSQL database - Using External Secrets
     jdbcOverwrite:
       enabled: true
@@ -105,12 +105,12 @@ spec:
       jdbcSecretName: sonarqube-postgresql
       jdbcSecretPasswordKey: postgres-password
       jdbcSecretUsernameKey: postgres-user
-    
+
     # Monitoring
     prometheusMonitoring:
       podMonitor:
         enabled: false
-    
+
     # Readiness and liveness probes - Extended for very slow startup
     startupProbe:
       initialDelaySeconds: 60
