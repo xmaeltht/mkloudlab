@@ -45,7 +45,7 @@ The SonarQube deployment runs in **Community Edition** with the following config
 - Host: `sonarqube-postgresql:5432`
 - Database: `sonarDB`
 - Username: `sonarUser`
-- Password: `SonarQube123!` (⚠️ Change after first login!)
+- Password: Managed via `sonarqube-postgresql` External Secret (synced from `secrets-store` namespace)
 - **Secret Name:** `sonarqube-sonarqube-postgresql` (important for Helm chart compatibility)
 
 **Storage:**
@@ -70,7 +70,7 @@ The SonarQube deployment runs in **Community Edition** with the following config
 **Health Probes:**
 - Readiness probe: 60s initial delay, 30s period, 6 failure threshold
 - Liveness probe: 60s initial delay, 30s period, 6 failure threshold
-- Monitoring passcode: `SonarQube123!`
+- Monitoring passcode: Managed via `sonarqube-monitoring` External Secret (synced from `secrets-store` namespace)
 
 **Admin Credentials:**
 - Managed via External Secrets Operator
@@ -193,8 +193,8 @@ If health probes are failing:
 
 1. **Change Default Passwords:**
    - Admin password: Change from default `admin` on first login
-   - Database password: Update `SonarQube123!` to a secure password
-   - Monitoring passcode: Update in production environments
+   - Database password: Managed via External Secrets, ensure source secret uses a strong password
+   - Monitoring passcode: Managed via External Secrets, update source secret in production environments
 
 2. **Enable HTTPS:** In production, ensure TLS is properly configured via cert-manager
 
