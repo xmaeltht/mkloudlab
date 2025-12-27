@@ -1,0 +1,46 @@
+# Tailscale Ingress Service
+# This exposes your services to the Tailscale network
+#
+# Usage:
+# 1. Label a service with "tailscale.com/expose: true"
+# 2. Annotate with "tailscale.com/hostname: my-service" for custom hostname
+# 3. The operator will automatically create a Tailscale proxy for it
+#
+# Example:
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: keycloak
+#   labels:
+#     tailscale.com/expose: "true"
+#   annotations:
+#     tailscale.com/hostname: "mkloud-keycloak"
+# spec:
+#   type: ClusterIP
+#   ...
+---
+# For exposing the main Istio gateway via Tailscale
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-gateway-tailscale
+  namespace: istio-system
+  labels:
+    tailscale.com/expose: "true"
+  annotations:
+    tailscale.com/hostname: "mkloud-gateway"
+    tailscale.com/tags: "tag:k8s,tag:gateway"
+spec:
+  type: LoadBalancer
+  loadBalancerClass: tailscale
+  selector:
+    istio.io/gateway-name: main-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP
