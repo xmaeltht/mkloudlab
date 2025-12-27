@@ -103,7 +103,18 @@ spec:
   policyTypes:
   - Ingress
   ingress:
-  # Allow from Istio Gateway
+  # Allow from Istio Gateway (main gateway in istio-system)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          istio.io/gateway-name: main-gateway
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow from local namespace gateway (for backward compatibility)
   - from:
     - namespaceSelector:
         matchLabels:

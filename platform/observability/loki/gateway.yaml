@@ -26,7 +26,8 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-    - name: loki-gateway
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
     - loki.maelkloud.com
   rules:
