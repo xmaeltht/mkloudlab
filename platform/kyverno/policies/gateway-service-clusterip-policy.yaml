@@ -16,20 +16,20 @@ metadata:
       services when using Gateway API with Istio.
 spec:
   rules:
-    - name: convert-gateway-loadbalancer-to-clusterip
-      match:
-        any:
-          - resources:
-              kinds:
-                - Service
-      preconditions:
-        all:
-          - key: "{{ request.object.spec.type }}"
-            operator: Equals
-            value: LoadBalancer
-          - key: "{{ request.object.metadata.labels.\"gateway.istio.io/managed\" }}"
-            operator: Equals
-            value: "istio.io-gateway-controller"
+  - name: convert-gateway-loadbalancer-to-clusterip
+    match:
+      any:
+      - resources:
+          kinds:
+          - Service
+    preconditions:
+      all:
+      - key: "{{ request.object.spec.type }}"
+        operator: Equals
+        value: LoadBalancer
+      - key: "{{ request.object.metadata.labels.\"gateway.istio.io/managed\" }}"
+        operator: Equals
+        value: "istio.io-gateway-controller"
       mutate:
         patchStrategicMerge:
           spec:
@@ -38,4 +38,3 @@ spec:
             externalIPs: null
             # Remove loadBalancerIP if present (deprecated but may exist)
             loadBalancerIP: null
-
