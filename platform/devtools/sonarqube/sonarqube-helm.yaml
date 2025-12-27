@@ -96,16 +96,33 @@ spec:
         enabled: false
     
     # Readiness and liveness probes
+    startupProbe:
+      httpGet:
+        path: /api/system/status
+        port: 9000
+        scheme: HTTP
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 30  # 30 * 10 = 300s (5 minutes) max startup time
+      timeoutSeconds: 5
     readinessProbe:
-      initialDelaySeconds: 60
+      httpGet:
+        path: /api/system/status
+        port: 9000
+        scheme: HTTP
+      initialDelaySeconds: 10
       periodSeconds: 30
-      failureThreshold: 6
-      timeoutSeconds: 10
+      failureThreshold: 3
+      timeoutSeconds: 5
     livenessProbe:
-      initialDelaySeconds: 60
+      httpGet:
+        path: /api/system/status
+        port: 9000
+        scheme: HTTP
+      initialDelaySeconds: 120
       periodSeconds: 30
       failureThreshold: 6
-      timeoutSeconds: 10
+      timeoutSeconds: 5
   targetNamespace: sonarqube
   install:
     createNamespace: true
