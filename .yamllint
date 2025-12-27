@@ -5,11 +5,13 @@ rules:
     min-spaces-from-content: 1
   indentation:
     spaces: 2
-    indent-sequences: true
+    indent-sequences: false
     check-multi-line-strings: false
   trailing-spaces: enable
   colons:
     max-spaces-before: 0
     max-spaces-after: 1
-exclude: |
+ignore: |
   platform/istio/templates/virtualservice-template.yaml
+  istio-1.21.0
+  **/Taskfile.yml

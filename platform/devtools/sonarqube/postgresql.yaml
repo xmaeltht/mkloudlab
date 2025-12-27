@@ -37,9 +37,9 @@ spec:
       - name: fix-permissions
         image: postgres:15-alpine
         command:
-          - sh
-          - -c
-          - |
+        - sh
+        - -c
+        - |
             chown -R 999:999 /var/lib/postgresql/data || true
             chown -R 999:999 /var/run/postgresql || true
             chown -R 999:999 /tmp || true
@@ -67,7 +67,7 @@ spec:
           runAsGroup: 999
           capabilities:
             drop:
-              - ALL
+            - ALL
           readOnlyRootFilesystem: false  # PostgreSQL needs write access
           seccompProfile:
             type: RuntimeDefault
@@ -187,4 +187,3 @@ spec:
     app: sonarqube-postgresql
   # Session affinity for sticky connections
   sessionAffinity: ClientIP
-
