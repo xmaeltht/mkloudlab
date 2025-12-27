@@ -31,7 +31,7 @@ jobs:
 
       - name: Run kubeconform on all manifests
         run: |
-          MANIFESTS=$(find platform services -type f \( -name "*.yaml" -o -name "*.yml" \) \
+          MANIFESTS=$(find platform -type f \( -name "*.yaml" -o -name "*.yml" \) \
             ! -path "*/istio-1.21.0/*" \
             ! -path "*/node_modules/*" \
             ! -name "*values.yaml" \

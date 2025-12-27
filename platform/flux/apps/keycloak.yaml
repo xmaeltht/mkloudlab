@@ -1,109 +1,16 @@
-# Flux HelmRelease for Keycloak (Codecentric Keycloak Helm Chart)
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: codecentric
-  namespace: flux-system
-spec:
-  interval: 1h
-  url: https://codecentric.github.io/helm-charts
----
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
 metadata:
   name: keycloak
   namespace: flux-system
 spec:
   interval: 5m
-  chart:
-    spec:
-      chart: keycloak
-      version: 18.10.0
-      sourceRef:
-        kind: HelmRepository
-        name: codecentric
-        namespace: flux-system
-      interval: 1h
-  values:
-    # Image configuration
-    image:
-      repository: quay.io/keycloak/keycloak
-      tag: "26.4.5"
-      pullPolicy: IfNotPresent
-
-    # Replica count
-    replicas: 1
-
-    # Disable built-in PostgreSQL (using Bitnami, which user doesn't want)
-    postgresql:
-      enabled: false
-
-    # Override database environment variables to use external PostgreSQL
-    # Note: extraEnv must be a YAML string that the chart will parse
-    extraEnv: |
-      - name: DB_ADDR
-        value: postgresql
-      - name: DB_USER
-        value: keycloak
-      - name: DB_PASSWORD
-        value: Keycloak123!
-      - name: DB_DATABASE
-        value: keycloak
-      - name: DB_VENDOR
-        value: postgres
-
-    # Using args for Keycloak configuration
-    command:
-      - "/opt/keycloak/bin/kc.sh"
-    args:
-      - "start"
-      - "--http-enabled=true"
-      - "--hostname-strict=false"
-
-    # Service configuration
-    service:
-      type: ClusterIP
-
-    # Ingress disabled - using Gateway API
-    ingress:
-      enabled: false
-
-    # Security Context
-    podSecurityContext:
-      fsGroup: 1001
-    securityContext:
-      runAsUser: 1001
-      runAsNonRoot: true
-
-    # Disable Istio sidecar injection (Istio proxy is failing startup probe)
-    podAnnotations:
-      sidecar.istio.io/inject: "false"
-
-    # Fix health check probes for Keycloak 26.4.5 (no /auth prefix)
-    startupProbe: |
-      httpGet:
-        path: /health/ready
-        port: http
-      initialDelaySeconds: 30
-      timeoutSeconds: 1
-      failureThreshold: 60
-      periodSeconds: 5
-
-    readinessProbe: |
-      httpGet:
-        path: /health/ready
-        port: http
-      initialDelaySeconds: 30
-      timeoutSeconds: 1
-      periodSeconds: 10
-
-    livenessProbe: |
-      httpGet:
-        path: /health/live
-        port: http
-      initialDelaySeconds: 0
-      timeoutSeconds: 1
-      periodSeconds: 10
+  path: ./platform/identity/keycloak
+  prune: true
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+    namespace: flux-system
   targetNamespace: keycloak
-  install:
-    createNamespace: true
+  wait: true
+  timeout: 5m

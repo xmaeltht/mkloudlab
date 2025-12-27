@@ -15,13 +15,26 @@ tasks:
   # =============================================================================
 
   up:
-    desc: Start the Vagrant Kubernetes cluster
+    desc: Start the Vagrant Kubernetes cluster (optional WORKER_COUNT=N)
     cmds:
-      - vagrant up
+      - |
+        # Check if WORKER_COUNT is set via environment variable or CLI arg
+        if [ -z "$WORKER_COUNT" ]; then
+          read -p "Enter number of worker nodes to deploy [2]: " INPUT_COUNT
+          WORKER_COUNT=${INPUT_COUNT:-2}
+        fi
+        echo "🚀 Deploying cluster with $WORKER_COUNT worker nodes..."
+        WORKER_COUNT=$WORKER_COUNT vagrant up
       - echo "Setting up kubeconfig..."
       - task: kubeconfig
       - echo "Waiting for cluster to be ready..."
       - task: wait-ready
+
+  scale:
+    desc: Scale the cluster to a specific number of worker nodes (e.g., task scale COUNT=3)
+    cmds:
+      - chmod +x scale-cluster.sh
+      - ./scale-cluster.sh {{.COUNT}}
 
   provision:
     desc: Re-run provisioning on existing VMs
@@ -72,28 +85,11 @@ tasks:
       - vagrant ssh {{.WORKER}}
 
   kubeconfig:
-    desc: Copy kubeconfig from control plane
-    cmds:
-      - |
-        echo "Copying kubeconfig from control plane..."
-        mkdir -p ~/.kube
-        vagrant ssh kcontroller -c "sudo cat /etc/kubernetes/admin.conf" > ~/.kube/config
-        # Update server address to use localhost with port forwarding
-        sed -i.bak 's/172.16.16.100:6443/localhost:6443/g' ~/.kube/config
-        # Remove certificate-authority-data lines
-        sed -i.bak2 '/certificate-authority-data:/d' ~/.kube/config
-        sed -i.bak3 '/certificate-authority-data/d' ~/.kube/config
-        # Add insecure-skip-tls-verify after server line
-        awk '/server: https:\/\/localhost:6443/ { print; print "    insecure-skip-tls-verify: true"; next } 1' ~/.kube/config > ~/.kube/config.tmp && mv ~/.kube/config.tmp ~/.kube/config
-        chmod 600 ~/.kube/config
-        echo "✅ Kubeconfig saved to ~/.kube/config"
-        echo "You can now use kubectl commands to interact with your cluster"
-
-  kubeconfig:script:
-    desc: Copy kubeconfig using setup script
+    desc: Copy kubeconfig from control plane (safely merges with existing config)
     cmds:
       - chmod +x setup-kubeconfig.sh
       - ./setup-kubeconfig.sh
+
 
   # =============================================================================
   # CLEANUP & RESET

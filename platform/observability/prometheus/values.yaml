@@ -1,0 +1,35 @@
+# Helm values override for kube-prometheus-stack (Prometheus Only)
+# Disables Grafana to allow standalone deployment
+
+grafana:
+  enabled: false
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    fullnameOverride: prometheus-server
+    service:
+      port: 80
+      targetPort: 9090
+    ingress:
+      enabled: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: local-path
+          resources:
+            requests:
+              storage: 5Gi

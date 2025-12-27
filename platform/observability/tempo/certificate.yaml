@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tempo-cert
+  namespace: observability
+spec:
+  secretName: tempo-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - tempo.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer

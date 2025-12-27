@@ -48,3 +48,15 @@ chmod +x /joincluster.sh
 
 echo "[TASK 8] Add worker role label to controller node"
 kubectl --kubeconfig=/etc/kubernetes/admin.conf label node $(hostname) node-role.kubernetes.io/worker=worker --overwrite
+
+echo "[TASK 9] Install Local Path Provisioner"
+kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+kubectl --kubeconfig=/etc/kubernetes/admin.conf patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+echo "[TASK 10] Install Metrics Server"
+kubectl --kubeconfig=/etc/kubernetes/admin.conf apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+# Wait for deployment to be created before patching
+while ! kubectl --kubeconfig=/etc/kubernetes/admin.conf get deployment metrics-server -n kube-system &> /dev/null; do
+  sleep 1
+done
+kubectl --kubeconfig=/etc/kubernetes/admin.conf patch deployment metrics-server -n kube-system --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'

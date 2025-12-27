@@ -1,4 +1,14 @@
 terraform {
+  # ⚠️ SECURITY WARNING: Local state is used by default.
+  # For production usage, please configure a remote backend (e.g., S3, GCS, Azure Storage)
+  # to properly secure your state file and enable locking.
+  #
+  # backend "s3" {
+  #   bucket = "mkloudlab"
+  #   key    = "keycloak/terraform.tfstate"
+  #   region = "us-east-1"
+  # }
+
   required_providers {
     keycloak = {
       source  = "keycloak/keycloak"
@@ -16,7 +26,7 @@ provider "keycloak" {
 }
 
 resource "keycloak_realm" "main" {
-  count       = var.create_realm ? 1 : 0
+  count        = var.create_realm ? 1 : 0
   realm        = var.realm_name
   enabled      = true
   display_name = "MaelKloud Realm"
@@ -29,9 +39,9 @@ resource "keycloak_realm" "main" {
 
   password_policy = "length(8) and digits(1) and lowerCase(1) and upperCase(1)"
 
-  access_token_lifespan      = "15m"
-  sso_session_idle_timeout   = "30m"
-  sso_session_max_lifespan   = "10h"
+  access_token_lifespan    = "15m"
+  sso_session_idle_timeout = "30m"
+  sso_session_max_lifespan = "10h"
 }
 
 data "keycloak_realm" "main" {
@@ -51,28 +61,28 @@ resource "keycloak_group" "admin_group" {
 locals {
   oidc_clients = {
     argocd = {
-      name = "ArgoCD"
+      name          = "ArgoCD"
       redirect_uris = ["https://argocd.maelkloud.com/*", "https://argocd.maelkloud.com"]
     },
     grafana = {
-      name = "Grafana"
+      name          = "Grafana"
       redirect_uris = ["https://grafana.maelkloud.com/login/generic_oauth"]
-      web_origins = ["https://grafana.maelkloud.com"]
+      web_origins   = ["https://grafana.maelkloud.com"]
     },
     prometheus = {
-      name = "Prometheus"
+      name          = "Prometheus"
       redirect_uris = ["https://prometheus.maelkloud.com/oauth/callback"]
-      web_origins = ["https://prometheus.maelkloud.com"]
+      web_origins   = ["https://prometheus.maelkloud.com"]
     }
   }
 }
 
 resource "keycloak_openid_client" "oidc_clients" {
-  for_each                     = local.oidc_clients
-  realm_id                     = local.realm_id
-  client_id                    = each.key
-  name                         = each.value.name
-  enabled                      = true
+  for_each  = local.oidc_clients
+  realm_id  = local.realm_id
+  client_id = each.key
+  name      = each.value.name
+  enabled   = true
 
   standard_flow_enabled        = true
   implicit_flow_enabled        = false
@@ -82,8 +92,8 @@ resource "keycloak_openid_client" "oidc_clients" {
   access_type = "CONFIDENTIAL"
 
   valid_redirect_uris = each.value.redirect_uris
-  base_url           = "https://${each.key}.maelkloud.com"
-  web_origins        = each.value.web_origins
+  base_url            = "https://${each.key}.maelkloud.com"
+  web_origins         = each.value.web_origins
 }
 
 resource "keycloak_role" "client_roles" {
@@ -102,23 +112,23 @@ resource "keycloak_group_roles" "client_group_roles" {
 
 # Client scope mappings (CONSOLIDATED - no duplicates)
 resource "keycloak_openid_client_default_scopes" "oidc_client_default_scopes" {
-  for_each = local.oidc_clients
+  for_each  = local.oidc_clients
   realm_id  = local.realm_id
   client_id = keycloak_openid_client.oidc_clients[each.key].id
-  
+
   default_scopes = [
     "profile",
-    "email", 
+    "email",
     "roles",
     "web-origins"
   ]
 }
 
 resource "keycloak_openid_client_optional_scopes" "oidc_client_optional_scopes" {
-  for_each = local.oidc_clients
+  for_each  = local.oidc_clients
   realm_id  = local.realm_id
   client_id = keycloak_openid_client.oidc_clients[each.key].id
-  
+
   optional_scopes = [
     "address",
     "phone",
@@ -129,36 +139,36 @@ resource "keycloak_openid_client_optional_scopes" "oidc_client_optional_scopes" 
 
 # Group membership mapper for all OIDC clients
 resource "keycloak_generic_protocol_mapper" "oidc_groups_mapper" {
-  for_each = local.oidc_clients
-  realm_id    = local.realm_id
-  client_id   = keycloak_openid_client.oidc_clients[each.key].id
-  name        = "groups"
-  protocol    = "openid-connect"
+  for_each        = local.oidc_clients
+  realm_id        = local.realm_id
+  client_id       = keycloak_openid_client.oidc_clients[each.key].id
+  name            = "groups"
+  protocol        = "openid-connect"
   protocol_mapper = "oidc-group-membership-mapper"
-  
+
   config = {
     "claim.name"           = "groups"
     "jsonType.label"       = "String"
     "id.token.claim"       = "true"
     "access.token.claim"   = "true"
     "userinfo.token.claim" = "true"
-    "full.path"           = "false"
+    "full.path"            = "false"
   }
 }
 
 # SAML client for SonarQube
 resource "keycloak_saml_client" "sonarqube" {
-  realm_id                    = local.realm_id
-  client_id                   = "sonarqube"
-  name                        = "SonarQube"
-  enabled                     = true
+  realm_id  = local.realm_id
+  client_id = "sonarqube"
+  name      = "SonarQube"
+  enabled   = true
 
-  sign_documents              = true
-  sign_assertions             = false
-  encrypt_assertions          = false
-  client_signature_required   = false
-  force_post_binding          = true
-  front_channel_logout        = true
+  sign_documents            = true
+  sign_assertions           = false
+  encrypt_assertions        = false
+  client_signature_required = false
+  force_post_binding        = true
+  front_channel_logout      = true
 
   valid_redirect_uris = [
     "https://sonarqube.maelkloud.com/oauth2/callback/saml"
@@ -179,7 +189,7 @@ resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_login" {
 }
 
 resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_email" {
-  depends_on = [keycloak_saml_client.sonarqube]
+  depends_on                 = [keycloak_saml_client.sonarqube]
   realm_id                   = local.realm_id
   client_id                  = keycloak_saml_client.sonarqube.id
   name                       = "Email"
@@ -190,7 +200,7 @@ resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_email" {
 }
 
 resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_username" {
-  depends_on = [keycloak_saml_client.sonarqube]
+  depends_on                 = [keycloak_saml_client.sonarqube]
   realm_id                   = local.realm_id
   client_id                  = keycloak_saml_client.sonarqube.id
   name                       = "Username"
@@ -201,7 +211,7 @@ resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_username" {
 }
 
 resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_name" {
-  depends_on = [keycloak_saml_client.sonarqube]
+  depends_on                 = [keycloak_saml_client.sonarqube]
   realm_id                   = local.realm_id
   client_id                  = keycloak_saml_client.sonarqube.id
   name                       = "Name"
@@ -212,7 +222,7 @@ resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_name" {
 }
 
 resource "keycloak_generic_protocol_mapper" "sonarqube_groups" {
-  depends_on = [keycloak_saml_client.sonarqube]
+  depends_on      = [keycloak_saml_client.sonarqube]
   realm_id        = local.realm_id
   client_id       = keycloak_saml_client.sonarqube.id
   name            = "Groups"
@@ -220,7 +230,7 @@ resource "keycloak_generic_protocol_mapper" "sonarqube_groups" {
   protocol_mapper = "saml-group-membership-mapper"
 
   config = {
-    "attribute.name"        = "groups"
+    "attribute.name"       = "groups"
     "attribute.nameformat" = "Basic"
     "full.path"            = "false"
   }
