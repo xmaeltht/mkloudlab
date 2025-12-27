@@ -75,18 +75,12 @@ spec:
     jvmOpts: "-Xmx4G -Xms1G"
     jvmCeOpts: "-Xmx512m -Xms128m"
     
-    # Security context (using defaults compatible with restricted pod security)
+    # Security context - Simplified to allow shared memory IPC
     securityContext:
-      fsGroup: 0
+      fsGroup: 1000
     containerSecurityContext:
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
       runAsUser: 1000
-      runAsGroup: 0
-      seccompProfile:
-        type: RuntimeDefault
-      capabilities:
-        drop: ["ALL"]
+      runAsGroup: 1000
     
     # Database configuration - Disable Bitnami PostgreSQL subchart
     postgresql:
