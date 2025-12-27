@@ -54,8 +54,8 @@ spec:
     
     # Use emptyDir for tmp (chart native support)
     emptyDir:
-      enabled: true
-      sizeLimit: "2Gi"
+      tmp:
+        sizeLimit: 2Gi
     
     # Disable shared memory file creation (use HTTP instead for IPC)
     env:
@@ -66,13 +66,13 @@ spec:
     resources:
       requests:
         cpu: 400m
-        memory: 3Gi
+        memory: 2048Mi
       limits:
         cpu: 800m
-        memory: 8Gi
+        memory: 6144Mi
     
     # JVM options - Increased heap for stability
-    jvmOpts: "-Xmx4G -Xms1G"
+    jvmOpts: "-Xmx2G -Xms512m"
     jvmCeOpts: "-Xmx512m -Xms128m"
     
     # Security context - Simplified to allow shared memory IPC
@@ -81,6 +81,12 @@ spec:
     containerSecurityContext:
       runAsUser: 1000
       runAsGroup: 1000
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
     
     # Database configuration - Disable Bitnami PostgreSQL subchart
     postgresql:
@@ -94,10 +100,6 @@ spec:
       jdbcSecretPasswordKey: postgres-password
       jdbcSecretUsernameKey: postgres-user
     
-    # JVM options
-    jvmOpts: "-Xmx2G -Xms512m"
-    jvmCeOpts: "-Xmx512m -Xms128m"
-    
     # Monitoring
     prometheusMonitoring:
       podMonitor:
@@ -105,17 +107,17 @@ spec:
     
     # Readiness and liveness probes - extending timeouts for slow startup
     startupProbe:
-      initialDelaySeconds: 30
-      periodSeconds: 10
-      failureThreshold: 30  # 30 * 10 = 300s (5 minutes) max startup time
-      timeoutSeconds: 10
-    readinessProbe:
       initialDelaySeconds: 60
+      periodSeconds: 15
+      failureThreshold: 40  # 40 * 15 = 600s (10 minutes) max startup time
+      timeoutSeconds: 15
+    readinessProbe:
+      initialDelaySeconds: 120
       periodSeconds: 30
       failureThreshold: 6
       timeoutSeconds: 10
     livenessProbe:
-      initialDelaySeconds: 180  # 3 minutes
+      initialDelaySeconds: 300  # 5 minutes - allow time for full startup
       periodSeconds: 30
       failureThreshold: 6
       timeoutSeconds: 10
