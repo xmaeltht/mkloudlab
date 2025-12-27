@@ -105,21 +105,21 @@ spec:
       podMonitor:
         enabled: false
     
-    # Readiness and liveness probes - extending timeouts for slow startup
+    # Readiness and liveness probes - Extended for very slow startup
     startupProbe:
       initialDelaySeconds: 60
-      periodSeconds: 15
-      failureThreshold: 40  # 40 * 15 = 600s (10 minutes) max startup time
-      timeoutSeconds: 15
+      periodSeconds: 10
+      failureThreshold: 60  # 60 * 10 = 600s (10 minutes) max startup time
+      timeoutSeconds: 10
     readinessProbe:
-      initialDelaySeconds: 120
+      initialDelaySeconds: 60
       periodSeconds: 30
       failureThreshold: 6
       timeoutSeconds: 10
     livenessProbe:
-      initialDelaySeconds: 300  # 5 minutes - allow time for full startup
+      initialDelaySeconds: 600  # 10 minutes - SonarQube takes very long to start
       periodSeconds: 30
-      failureThreshold: 6
+      failureThreshold: 10
       timeoutSeconds: 10
   targetNamespace: sonarqube
   install:
