@@ -24,6 +24,8 @@ SonarQube is deployed using:
 
 - `sonarqube-helm.yaml`: Flux HelmRelease with SonarQube configuration
 - `postgresql.yaml`: PostgreSQL StatefulSet, Service, and Secret for SonarQube database
+- `external-secrets.yaml`: ExternalSecret definitions for syncing secrets from secrets-store namespace
+- `secretstore.yaml`: SecretStore configuration pointing to secrets-store namespace
 - `gateway.yaml`: Istio Gateway for external access
 - `certificate.yaml`: Cert-Manager Certificate for TLS
 - `namespace.yaml`: SonarQube namespace definition
@@ -71,9 +73,11 @@ The SonarQube deployment runs in **Community Edition** with the following config
 - Monitoring passcode: `SonarQube123!`
 
 **Admin Credentials:**
+- Managed via External Secrets Operator
+- Secret Name: `sonarqube-admin` (synced from `secrets-store` namespace)
 - Default Username: `admin`
-- Default Password: `admin` (initially)
-- New Password: `SonarQube123!` (⚠️ Change after first login!)
+- Password: Stored in `sonarqube-admin` secret, sourced from `secrets-store/sonarqube-admin`
+- Change password after first login via SonarQube UI
 
 #### PostgreSQL Configuration
 
@@ -84,16 +88,23 @@ The SonarQube deployment runs in **Community Edition** with the following config
   - Limits: 500m CPU, 512Mi memory
 - **Secret:** `sonarqube-sonarqube-postgresql` (matches Helm chart naming convention)
 
-## Important: PostgreSQL Secret Naming
+## Secret Management with External Secrets
 
-⚠️ **Critical Configuration Detail:**
+**Secrets are managed using External Secrets Operator:**
 
-The PostgreSQL secret must be named `sonarqube-sonarqube-postgresql` (not `sonarqube-postgresql`) to match the SonarQube Helm chart's naming convention. The chart automatically prefixes resources with the release name.
+SonarQube uses three ExternalSecrets that sync from the `secrets-store` namespace:
 
-This naming is crucial for:
-- The SonarQube pod to find the database credentials
-- Proper Helm chart integration
-- Avoiding `CreateContainerConfigError` issues
+1. **`sonarqube-admin`**: Admin credentials (username, password, currentPassword)
+2. **`sonarqube-postgresql`**: Database credentials (postgres-user, postgres-password, postgres-db)
+3. **`sonarqube-monitoring`**: Monitoring passcode
+
+**How it works:**
+- Source secrets are stored in the `secrets-store` namespace
+- A `SecretStore` resource in the sonarqube namespace points to `secrets-store`
+- `ExternalSecret` resources sync secrets automatically (refresh interval: 1h)
+- Target secrets are created in the sonarqube namespace
+
+⚠️ **Important**: The External Secrets Operator must be running and the source secrets must exist in `secrets-store` namespace before SonarQube can start
 
 ## Deployment via Flux
 
