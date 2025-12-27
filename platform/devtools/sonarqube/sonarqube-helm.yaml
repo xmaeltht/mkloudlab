@@ -73,14 +73,18 @@ spec:
       - name: tmp-dir
         mountPath: /tmp
     
-    # Resources
+    # Resources - Increased for better startup stability
     resources:
       requests:
         cpu: 400m
-        memory: 2048M
+        memory: 3Gi
       limits:
         cpu: 800m
-        memory: 6144M
+        memory: 8Gi
+    
+    # JVM options - Increased heap for stability
+    jvmOpts: "-Xmx4G -Xms1G"
+    jvmCeOpts: "-Xmx512m -Xms128m"
     
     # Security context (using defaults compatible with restricted pod security)
     securityContext:
