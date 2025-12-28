@@ -48,7 +48,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: keycloak
+      app.kubernetes.io/name: keycloak
   policyTypes:
     - Ingress
     - Egress
@@ -57,9 +57,7 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: istio-system
-        - namespaceSelector:
-            matchLabels:
-              name: monitoring
+
       ports:
         - protocol: TCP
           port: 8080
@@ -97,49 +95,13 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: keycloak
+              app.kubernetes.io/name: keycloak
       ports:
         - protocol: TCP
           port: 5432
   egress:
     - to: []
       ports:
-        - protocol: UDP
-          port: 53
----
-# Monitoring network policy
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: monitoring-netpol
-  namespace: monitoring
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/part-of: monitoring
-  policyTypes:
-    - Ingress
-    - Egress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              name: istio-system
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/part-of: monitoring
-      ports:
-        - protocol: TCP
-          port: 9090
-        - protocol: TCP
-          port: 3000
-  egress:
-    - to: []
-      ports:
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 80
         - protocol: UDP
           port: 53
 ---
@@ -158,9 +120,7 @@ spec:
     - Egress
   ingress:
     - from:
-        - namespaceSelector:
-            matchLabels:
-              name: monitoring
+
         - namespaceSelector:
             matchLabels:
               name: default
@@ -183,9 +143,7 @@ spec:
           port: 4318
   egress:
     - to:
-        - namespaceSelector:
-            matchLabels:
-              name: monitoring
+
         - namespaceSelector:
             matchLabels:
               name: observability
@@ -221,9 +179,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: observability
-        - namespaceSelector:
-            matchLabels:
-              name: monitoring
       ports:
         - protocol: TCP
           port: 4317
@@ -249,6 +204,8 @@ spec:
           port: 3100
     - to: []
       ports:
+        - protocol: TCP
+          port: 443
         - protocol: UDP
           port: 53
 ---

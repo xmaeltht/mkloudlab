@@ -1,0 +1,133 @@
+# Flux HelmRelease for SonarQube
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarqube
+  namespace: sonarqube
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: sonarqube
+      version: 10.7.0
+      sourceRef:
+        kind: HelmRepository
+        name: sonarqube
+        namespace: flux-system
+      interval: 1h
+  values:
+    # Edition (Community Edition)
+    edition: "community"
+
+    # Image configuration
+    image:
+      repository: sonarqube
+      pullPolicy: IfNotPresent
+
+    # Monitoring passcode - Using External Secrets
+    monitoringPasscodeSecretName: sonarqube-monitoring
+    monitoringPasscodeSecretKey: passcode
+
+    # Admin credentials - Using External Secrets
+    account:
+      adminPasswordSecretName: sonarqube-admin
+      adminPasswordSecretKey: password
+      currentAdminPasswordSecretName: sonarqube-admin
+      currentAdminPasswordSecretKey: currentPassword
+
+    # Service configuration
+    service:
+      type: ClusterIP
+      externalPort: 9000
+      internalPort: 9000
+
+    # Ingress disabled - using Gateway API
+    ingress:
+      enabled: false
+
+    # Persistence
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: local-path
+      accessMode: ReadWriteOnce
+
+    # Use emptyDir for tmp (chart native support)
+    emptyDir:
+      sizeLimit: 2Gi
+
+    # Disable shared memory file creation (use HTTP instead for IPC)
+    # Configure SonarQube for reverse proxy
+    env:
+      - name: SONAR_WEB_JAVAADDITIONALOPTS
+        value: "-Dsonar.web.javaRestarts.pause=1000 -Dsonar.web.host=https://sonarqube.maelkloud.com"
+
+    # Resources - Increased for better startup stability
+    resources:
+      requests:
+        cpu: 400m
+        memory: 2048Mi
+      limits:
+        cpu: 800m
+        memory: 6144Mi
+
+    # JVM options - Increased heap for stability
+    jvmOpts: "-Xmx2G -Xms512m"
+    jvmCeOpts: "-Xmx512m -Xms128m"
+
+    # Container security context - Run as non-root for Elasticsearch
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 0
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Pod security context
+    securityContext:
+      fsGroup: 0
+
+    # Init containers security context - Allow network access
+    initContainers:
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: false
+        runAsUser: 0
+
+    # Database configuration - Disable Bitnami PostgreSQL subchart
+    postgresql:
+      enabled: false
+
+    # Use external PostgreSQL database - Using External Secrets
+    jdbcOverwrite:
+      enabled: true
+      jdbcUrl: "jdbc:postgresql://sonarqube-postgresql:5432/sonarDB"
+      jdbcSecretName: sonarqube-postgresql
+      jdbcSecretPasswordKey: postgres-password
+      jdbcSecretUsernameKey: postgres-user
+
+    # Monitoring
+    prometheusMonitoring:
+      podMonitor:
+        enabled: false
+
+    # Readiness and liveness probes - Extended for very slow startup
+    startupProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      failureThreshold: 60  # 60 * 10 = 600s (10 minutes) max startup time
+      timeoutSeconds: 10
+    readinessProbe:
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      failureThreshold: 6
+      timeoutSeconds: 10
+    livenessProbe:
+      initialDelaySeconds: 600  # 10 minutes - SonarQube takes very long to start
+      periodSeconds: 30
+      failureThreshold: 10
+      timeoutSeconds: 10
+  targetNamespace: sonarqube
+  install:
+    createNamespace: true

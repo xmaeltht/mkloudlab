@@ -1,0 +1,37 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: keycloak-gateway
+  namespace: keycloak
+  annotations:
+    # Configure the gateway service to use ClusterIP instead of LoadBalancer
+    networking.istio.io/service-type: "ClusterIP"
+spec:
+  gatewayClassName: istio
+  listeners:
+  - name: https
+    protocol: HTTPS
+    port: 443
+    hostname: keycloak.maelkloud.com
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: keycloak-cert
+        kind: Secret
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: keycloak-route
+  namespace: keycloak
+spec:
+  parentRefs:
+  - name: main-gateway
+    namespace: istio-system
+    sectionName: https-keycloak
+  hostnames:
+  - keycloak.maelkloud.com
+  rules:
+  - backendRefs:
+    - name: keycloak-keycloak-keycloakx-http
+      port: 80

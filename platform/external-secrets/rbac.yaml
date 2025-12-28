@@ -1,0 +1,57 @@
+# RBAC for External Secrets Operator to access secrets-store namespace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets
+  namespace: keycloak
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-secrets
+  namespace: sonarqube
+---
+# Role to read secrets from secrets-store namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: external-secrets-reader
+  namespace: secrets-store
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list"]
+---
+# RoleBinding for Keycloak namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: external-secrets-keycloak
+  namespace: secrets-store
+subjects:
+- kind: ServiceAccount
+  name: external-secrets
+  namespace: keycloak
+roleRef:
+  kind: Role
+  name: external-secrets-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# RoleBinding for SonarQube namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: external-secrets-sonarqube
+  namespace: secrets-store
+subjects:
+- kind: ServiceAccount
+  name: external-secrets
+  namespace: sonarqube
+roleRef:
+  kind: Role
+  name: external-secrets-reader
+  apiGroup: rbac.authorization.k8s.io

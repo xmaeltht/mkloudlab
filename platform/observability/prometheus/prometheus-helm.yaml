@@ -1,0 +1,51 @@
+# Flux HelmRelease for Prometheus (kube-prometheus-stack)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus
+  namespace: observability
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: 56.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  values:
+    grafana:
+      enabled: false
+
+    prometheus:
+      enabled: true
+      prometheusSpec:
+        fullnameOverride: prometheus-server
+        # Configure external URL for reverse proxy
+        externalUrl: "https://prometheus.maelkloud.com"
+        routePrefix: "/"
+        service:
+          port: 80
+          targetPort: 9090
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 50Gi
+
+    alertmanager:
+      enabled: true
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 5Gi

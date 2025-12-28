@@ -1,0 +1,198 @@
+# Network Policies for Keycloak - Zero Trust Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-deny-all
+  namespace: keycloak
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+---
+# Allow Keycloak to PostgreSQL
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: keycloak-to-postgresql
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloakx
+  policyTypes:
+  - Egress
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+  # Allow PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: keycloak-postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow HTTPS for external connections (OIDC, SAML, etc.)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  - ports:
+    - protocol: TCP
+      port: 443
+  # Allow Istio control plane access (for sidecar)
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+    ports:
+    - protocol: TCP
+      port: 15012
+---
+# Allow Istio Gateway to access DNS and Control Plane
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-egress
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      istio.io/gateway-name: keycloak-gateway
+  policyTypes:
+  - Egress
+  egress:
+  # Allow all egress for Gateway to function (DNS, Istiod, Backend)
+  - {}
+  # Allow PostgreSQL
+  - to:
+    - podSelector:
+        matchLabels:
+          app: keycloak-postgresql
+    ports:
+    - protocol: TCP
+      port: 5432
+  # Allow HTTPS for external connections (OIDC, SAML, etc.)
+  - to:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 443
+  - ports:
+    - protocol: TCP
+      port: 443
+---
+# Allow ingress to Keycloak from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-keycloak-ingress
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: keycloakx
+  policyTypes:
+  - Ingress
+  ingress:
+  # Allow from Istio Gateway (main gateway in istio-system)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: istio-system
+      podSelector:
+        matchLabels:
+          istio.io/gateway-name: main-gateway
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow from local namespace gateway (for backward compatibility)
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: keycloak
+      podSelector:
+        matchLabels:
+          app: keycloak-gateway-istio
+    ports:
+    - protocol: TCP
+      port: 8080
+  # Allow from same namespace (for health checks)
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+    - protocol: TCP
+      port: 9000  # Metrics
+---
+# Allow PostgreSQL ingress only from Keycloak
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgresql-from-keycloak
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak-postgresql
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: keycloakx
+    ports:
+    - protocol: TCP
+      port: 5432
+  egress:
+  # Allow DNS
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+---
+# Allow PostgreSQL Istio sidecar to access control plane
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgresql-to-istio
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app: keycloak-postgresql
+  policyTypes:
+  - Egress
+  egress:
+  # Allow all egress for Istio sidecar to function
+  - {}
+---
+# Allow Istio Gateway to access DNS and Control Plane
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-egress
+  namespace: keycloak
+spec:
+  podSelector:
+    matchLabels:
+      istio.io/gateway-name: keycloak-gateway
+  policyTypes:
+  - Egress
+  egress:
+  # Allow all egress for Gateway to function (DNS, Istiod, Backend)
+  - {}

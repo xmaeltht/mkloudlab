@@ -32,3 +32,33 @@ istio-*/
 troubleshoot/
 
 *.vagrant/
+.vagrant/
+
+# Kubernetes secrets and sensitive files
+*-secret.yaml
+*.key
+*.pem
+*.crt
+kubeconfig
+*.kubeconfig
+
+# But allow External Secrets CRDs (these don't contain actual secrets)
+!platform/identity/*/external-secrets.yaml
+!platform/identity/*/secretstore.yaml
+!platform/devtools/*/external-secrets.yaml
+!platform/devtools/*/secretstore.yaml
+!platform/external-secrets/*.yaml
+
+# Backup files
+*-backup.yaml
+*.backup
+*~
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# Helm values with secrets (use *-values-secret.yaml pattern)
+*-values-secret.yaml
+*-secret-values.yamlplatform/networking/tailscale/oauth-secret.yaml
