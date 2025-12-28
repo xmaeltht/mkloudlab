@@ -10,4 +10,5 @@ resources:
   - tailscale/namespace.yaml
   - tailscale/source.yaml
   - tailscale/helmrelease.yaml
-  # Note: oauth-secret.yaml and ingress-service.yaml are applied manually after setup
+  - tailscale/ingress-service.yaml
+  # Note: oauth-secret.yaml must be created manually with your Tailscale OAuth credentials

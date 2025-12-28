@@ -23,6 +23,9 @@ spec:
       enabled: true
       prometheusSpec:
         fullnameOverride: prometheus-server
+        # Configure external URL for reverse proxy
+        externalUrl: "https://prometheus.maelkloud.com"
+        routePrefix: "/"
         service:
           port: 80
           targetPort: 9090

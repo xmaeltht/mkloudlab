@@ -57,9 +57,10 @@ spec:
       sizeLimit: 2Gi
 
     # Disable shared memory file creation (use HTTP instead for IPC)
+    # Configure SonarQube for reverse proxy
     env:
       - name: SONAR_WEB_JAVAADDITIONALOPTS
-        value: "-Dsonar.web.javaRestarts.pause=1000"
+        value: "-Dsonar.web.javaRestarts.pause=1000 -Dsonar.web.host=https://sonarqube.maelkloud.com"
 
     # Resources - Increased for better startup stability
     resources:

@@ -5,3 +5,5 @@ metadata:
   labels:
     name: tailscale
     toolkit.fluxcd.io/tenant: platform
+    # Disable Istio sidecar injection - Tailscale proxy needs direct network access
+    sidecar.istio.io/inject: "false"

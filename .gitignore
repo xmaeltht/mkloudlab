@@ -61,4 +61,4 @@ kubeconfig
 
 # Helm values with secrets (use *-values-secret.yaml pattern)
 *-values-secret.yaml
-*-secret-values.yaml
+*-secret-values.yamlplatform/networking/tailscale/oauth-secret.yaml

@@ -23,6 +23,13 @@ spec:
 
     adminPassword: admin
 
+    # Configure Grafana to work behind reverse proxy
+    grafana.ini:
+      server:
+        domain: grafana.maelkloud.com
+        root_url: https://grafana.maelkloud.com
+        serve_from_sub_path: false
+
     service:
       type: ClusterIP
       port: 80

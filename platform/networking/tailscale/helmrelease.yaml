@@ -46,9 +46,11 @@ spec:
       # Accept DNS routes from other Tailscale nodes
       acceptRoutes: true
 
-    # API server proxy for improved performance
+    # API server proxy - DISABLED for performance
+    # Enabling this proxies all k8s API traffic through Tailscale, causing severe latency
+    # Only enable if you specifically need API server access through Tailscale
     apiServerProxyConfig:
-      mode: "true"
+      mode: "false"
 
     # Resource limits
     resources:

@@ -59,6 +59,8 @@ spec:
         value: "true"
       - name: KC_HOSTNAME
         value: "keycloak.maelkloud.com"
+      - name: KC_HOSTNAME_URL
+        value: "https://keycloak.maelkloud.com"
       - name: KC_HOSTNAME_STRICT
         value: "true"
       - name: KC_HOSTNAME_STRICT_BACKCHANNEL
