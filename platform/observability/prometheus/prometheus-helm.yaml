@@ -44,6 +44,15 @@ spec:
           timeoutSeconds: 10
           periodSeconds: 30
           failureThreshold: 60  # 60 * 30s = 30 minutes max startup time
+        # Increase memory limits to handle WAL replay
+        # WAL replay can consume significant memory with large datasets
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
         storageSpec:
           volumeClaimTemplate:
             spec:
