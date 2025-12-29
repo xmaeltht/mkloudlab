@@ -60,10 +60,6 @@ resource "keycloak_group" "admin_group" {
 
 locals {
   oidc_clients = {
-    argocd = {
-      name          = "ArgoCD"
-      redirect_uris = ["https://argocd.maelkloud.com/*", "https://argocd.maelkloud.com"]
-    },
     grafana = {
       name          = "Grafana"
       redirect_uris = ["https://grafana.maelkloud.com/login/generic_oauth"]

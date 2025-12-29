@@ -27,12 +27,6 @@ output "oidc_client_secrets" {
 }
 
 # Individual OIDC client secrets
-output "argocd_oidc_client_secret" {
-  description = "The client secret for ArgoCD OIDC client"
-  value       = keycloak_openid_client.oidc_clients["argocd"].client_secret
-  sensitive   = true
-}
-
 output "grafana_oidc_client_secret" {
   description = "The client secret for Grafana OIDC client"
   value       = keycloak_openid_client.oidc_clients["grafana"].client_secret

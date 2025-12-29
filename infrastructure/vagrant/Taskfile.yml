@@ -20,8 +20,8 @@ tasks:
       - |
         # Check if WORKER_COUNT is set via environment variable or CLI arg
         if [ -z "$WORKER_COUNT" ]; then
-          read -p "Enter number of worker nodes to deploy [2]: " INPUT_COUNT
-          WORKER_COUNT=${INPUT_COUNT:-2}
+          read -p "Enter number of worker nodes to deploy [3]: " INPUT_COUNT
+          WORKER_COUNT=${INPUT_COUNT:-3}
         fi
         echo "🚀 Deploying cluster with $WORKER_COUNT worker nodes..."
         WORKER_COUNT=$WORKER_COUNT vagrant up
@@ -32,6 +32,8 @@ tasks:
 
   scale:
     desc: Scale the cluster to a specific number of worker nodes (e.g., task scale COUNT=3)
+    vars:
+      COUNT: '{{.COUNT | default "1"}}'
     cmds:
       - chmod +x scale-cluster.sh
       - ./scale-cluster.sh {{.COUNT}}

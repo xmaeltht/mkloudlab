@@ -37,7 +37,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
                 - keycloak
                 - local-path-storage
                 - gitlab
@@ -71,7 +70,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
                 - keycloak
                 - local-path-storage
                 - gitlab
@@ -102,7 +100,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
                 - keycloak
                 - local-path-storage
                 - gitlab

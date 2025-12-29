@@ -11,7 +11,7 @@ This directory provisions Grafana Tempo via the official Helm chart using Kustom
 
 ## Management
 
-- Managed by ArgoCD through `platform/argocd/apps/tempo-app.yaml`.
+- Managed by Flux via `platform/flux/apps/tempo.yaml`.
 - Apply manually (if needed) with:
   ```bash
   kubectl apply -k platform/observability/tempo

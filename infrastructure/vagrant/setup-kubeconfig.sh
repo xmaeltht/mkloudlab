@@ -13,7 +13,6 @@ KUBECONFIG_DEFAULT="$KUBECONFIG_DIR/config"
 KUBECONFIG_NEW="$KUBECONFIG_DIR/config.mkloudlab"
 
 echo "🔐 Setting up kubeconfig for mkloudlab local access..."
-echo "DEBUG: Removing the old context if it exists..."
 # Remove the old context if it exists
 kubectl config delete-context mkloudlab >/dev/null 2>&1 || true
 kubectl config delete-cluster mkloudlab >/dev/null 2>&1 || true
@@ -56,26 +55,25 @@ sed -i.bak2 '/certificate-authority-data:/d' "$KUBECONFIG_NEW"
 # Add insecure-skip-tls-verify to the cluster config
 # We replace the private IP with localhost since port 6443 is forwarded
 # And add insecure-skip-tls-verify
-awk -v ip="$CONTROLLER_IP" '$0 ~ "server: https://" ip ":6443" { print "    server: https://127.0.0.1:6443"; print "    insecure-skip-tls-verify: true"; next } 1' "$KUBECONFIG_NEW" > "${KUBECONFIG_NEW}.tmp" && mv "${KUBECONFIG_NEW}.tmp" "$KUBECONFIG_NEW"
+awk -v ip="$CONTROLLER_IP" '$0 ~ ("server: https://" ip ":6443") { print "    server: https://127.0.0.1:6443"; print "    insecure-skip-tls-verify: true"; next } 1' "$KUBECONFIG_NEW" > "${KUBECONFIG_NEW}.tmp" && mv "${KUBECONFIG_NEW}.tmp" "$KUBECONFIG_NEW"
 
 # Clean up sed backups
 rm -f "${KUBECONFIG_NEW}.bak" "${KUBECONFIG_NEW}.bak2" "${KUBECONFIG_NEW}.bak3"
 
 # Rename context, user, and cluster to 'mkloudlab'
+# Rename context name first (before cluster/user names change)
+sed -i.bak4 's/name: kubernetes-admin@kubernetes$/name: mkloudlab/' "$KUBECONFIG_NEW"
 # Rename cluster and user using sed (kubectl config rename-cluster/user don't exist)
-sed -i.bak4 's/name: kubernetes$/name: mkloudlab/' "$KUBECONFIG_NEW"
-sed -i.bak5 's/cluster: kubernetes$/cluster: mkloudlab/' "$KUBECONFIG_NEW"
-sed -i.bak6 's/user: kubernetes-admin$/user: mkloudlab/' "$KUBECONFIG_NEW"
-sed -i.bak7 's/name: kubernetes-admin$/name: mkloudlab/' "$KUBECONFIG_NEW"
+sed -i.bak5 's/name: kubernetes$/name: mkloudlab/' "$KUBECONFIG_NEW"
+sed -i.bak6 's/cluster: kubernetes$/cluster: mkloudlab/' "$KUBECONFIG_NEW"
+sed -i.bak7 's/user: kubernetes-admin$/user: mkloudlab/' "$KUBECONFIG_NEW"
+sed -i.bak8 's/name: kubernetes-admin$/name: mkloudlab/' "$KUBECONFIG_NEW"
 
 # Clean up backups
 rm -f "${KUBECONFIG_NEW}.bak"*
 
-# Rename context to 'mkloudlab'
-kubectl config rename-context kubernetes-admin@kubernetes mkloudlab
-
 # Now Merge with existing config
-echo "twisted-merge: Merging with existing kubeconfig..."
+echo "Merging with existing kubeconfig..."
 
 # Backup existing config
 if [ -f "$KUBECONFIG_DEFAULT" ]; then
@@ -109,6 +107,9 @@ fi
 
 # Clean up temp file
 rm -f "$KUBECONFIG_NEW"
+
+# Reset KUBECONFIG to point to the final merged config before setting context
+unset KUBECONFIG
 
 echo ""
 echo "🔄 Switching to context 'mkloudlab'..."

@@ -33,6 +33,7 @@ tasks:
       - task: gitops:ensure-committed
       - task: install:apps
       - task: install:certificates
+      - task: install:k9s-plugins
       - task: status
 
   install:prerequisites:
@@ -66,6 +67,8 @@ tasks:
     deps: [validate:cluster, flux:configure-repo]
     cmds:
       - echo "Registering Flux applications..."
+      - echo "Helm repositories (required for HelmReleases)..."
+      - kubectl apply -f platform/flux/apps/repositories.yaml
       - echo "Infrastructure layer..."
       - kubectl apply -f platform/flux/apps/cert-manager.yaml
       - kubectl apply -f platform/flux/apps/external-secrets.yaml
@@ -73,6 +76,9 @@ tasks:
       - kubectl apply -f platform/flux/apps/kyverno-policies.yaml
       - kubectl apply -f platform/flux/apps/security-config.yaml
       - kubectl apply -f platform/flux/apps/cluster-config.yaml
+      - echo "Networking layer..."
+      - kubectl apply -f platform/flux/apps/networking.yaml
+      - kubectl apply -f platform/flux/apps/istio-config.yaml
       - echo "Application layer..."
       - kubectl apply -f platform/flux/apps/keycloak.yaml
       # keycloak-gateway removed - keycloak kustomization handles all resources
@@ -99,6 +105,14 @@ tasks:
           task certificates:apply-all
           echo "✅ Certificates configured"
         fi
+
+  install:k9s-plugins:
+    desc: Install K9s plugins for Flux CD keyboard shortcuts
+    cmds:
+      - echo "Installing K9s plugins..."
+      - chmod +x scripts/install-k9s-plugins.sh
+      - ./scripts/install-k9s-plugins.sh
+      - echo "✅ K9s plugins installation complete"
 
   # =============================================================================
   # FLUX OPERATIONS
@@ -219,9 +233,9 @@ tasks:
     desc: Apply all certificate manifests
     cmds:
       - echo "Applying certificate manifests..."
-      - kubectl apply -f platform/argocd/manifests/argocd-cert.yaml
-      - kubectl apply -f platform/argocd/manifests/referencegrant.yaml || true
-      - echo "✅ All certificates applied"
+      - echo "⚠️  Note: Certificates are now managed through Flux kustomizations"
+      - echo "   Individual certificate resources are applied automatically by Flux"
+      - echo "✅ Certificate management configured (managed by Flux)"
 
   certificates:status:
     desc: Check certificate status across all namespaces
@@ -243,9 +257,9 @@ tasks:
         fi
 
   certificates:describe:
-    desc: Describe certificate issues for troubleshooting
+    desc: Describe certificate issues for troubleshooting. Usage: task certificates:describe [namespace]
     vars:
-      NAMESPACE: '{{.CLI_ARGS | default "argocd"}}'
+      NAMESPACE: '{{.CLI_ARGS | default ""}}'
     cmds:
       - |
         if [ -z "{{.CLI_ARGS}}" ]; then
@@ -276,14 +290,14 @@ tasks:
 
   logs:
     desc: View logs for a specific component
-    prompt: Enter component name (argocd, keycloak, etc.)
+    prompt: Enter component name (keycloak, grafana, prometheus, alloy, etc.)
     vars:
       COMPONENT: '{{.CLI_ARGS | default .COMPONENT}}'
     cmds:
       - |
         if [ -z "{{.COMPONENT}}" ]; then
           echo "Usage: task logs -- <component-name>"
-          echo "Available components: argocd, keycloak, prometheus, grafana, alloy"
+          echo "Available components: keycloak, grafana, prometheus, alloy, loki, tempo"
           exit 1
         fi
         kubectl logs -n {{.COMPONENT}} -l app={{.COMPONENT}} --tail=100 -f
@@ -365,10 +379,10 @@ tasks:
     desc: Uninstall the entire stack
     prompt: This will remove all deployed applications. Are you sure?
     cmds:
-      - kubectl delete -f platform/argocd/apps --ignore-not-found=true
+      - kubectl delete -f platform/flux/apps --ignore-not-found=true
       - echo "Waiting for applications to be removed..."
       - sleep 30
-      - kubectl delete namespace {{.ARGOCD_NAMESPACE}} --ignore-not-found=true
+      - kubectl delete namespace {{.FLUX_NAMESPACE}} --ignore-not-found=true
       - echo "Uninstall completed"
 
   reset:
@@ -381,7 +395,9 @@ tasks:
       - task: install
 
   scale:
-    desc: Scale the cluster nodes (proxy to vagrant:scale)
+    desc: Scale the cluster nodes (proxy to vagrant:scale). Usage: task scale COUNT=3
+    vars:
+      COUNT: '{{.COUNT | default "1"}}'
     cmds:
       - task: vagrant:scale
         vars: { COUNT: "{{.COUNT}}" }
@@ -403,7 +419,7 @@ tasks:
       - kubectl top nodes 2>/dev/null || echo "Metrics server not available"
       - echo -e "\n=== Critical Pods ==="
       - kubectl get pods -n kube-system --field-selector=status.phase!=Running 2>/dev/null || echo "All system pods running ✓"
-      - kubectl get pods -n {{.ARGOCD_NAMESPACE}} --field-selector=status.phase!=Running 2>/dev/null || echo "All ArgoCD pods running ✓"
+      - kubectl get pods -n {{.FLUX_NAMESPACE}} --field-selector=status.phase!=Running 2>/dev/null || echo "All Flux pods running ✓"
       - echo -e "\n=== Gateway API Status ==="
       - kubectl get gateways -A --no-headers 2>/dev/null | wc -l | xargs echo "Active Gateways:"
       - kubectl get httproutes -A --no-headers 2>/dev/null | wc -l | xargs echo "HTTP Routes:"
@@ -411,7 +427,8 @@ tasks:
       - kubectl get certificates -A --no-headers 2>/dev/null | grep -c "True" | xargs echo "Ready Certificates:"
       - 'kubectl get certificates -A --no-headers 2>/dev/null | grep -cv "True" | xargs echo "Pending Certificates:" || echo "Pending Certificates: 0"'
       - echo -e "\n=== DNS Resolution ==="
-      - 'nslookup argocd.maelkloud.com >/dev/null 2>&1 && echo "ArgoCD DNS: ✓" || echo "ArgoCD DNS: ✗"'
+      - 'nslookup keycloak.maelkloud.com >/dev/null 2>&1 && echo "Keycloak DNS: ✓" || echo "Keycloak DNS: ✗"'
+      - 'nslookup grafana.maelkloud.com >/dev/null 2>&1 && echo "Grafana DNS: ✓" || echo "Grafana DNS: ✗"'
       - echo -e "\n=== Security Status ==="
       - kubectl get networkpolicies -A --no-headers | wc -l | xargs echo "Network Policies:"
       - kubectl get namespaces -l pod-security.kubernetes.io/enforce=restricted --no-headers | wc -l | xargs echo "Restricted Namespaces:"
@@ -425,7 +442,8 @@ tasks:
       - kubectl get all -A > troubleshoot/all-resources.txt
       - kubectl describe nodes > troubleshoot/nodes.txt
       - kubectl get events -A --sort-by='.lastTimestamp' > troubleshoot/events.txt
-      - kubectl logs -n {{.ARGOCD_NAMESPACE}} -l app.kubernetes.io/name=argocd-server --tail=100 > troubleshoot/argocd-server.log 2>/dev/null || true
+      - kubectl logs -n {{.FLUX_NAMESPACE}} -l app.kubernetes.io/name=source-controller --tail=100 > troubleshoot/flux-source-controller.log 2>/dev/null || true
+      - kubectl logs -n {{.FLUX_NAMESPACE}} -l app.kubernetes.io/name=kustomize-controller --tail=100 > troubleshoot/flux-kustomize-controller.log 2>/dev/null || true
       - echo "Troubleshooting info saved to ./troubleshoot/ directory"
 
   # =============================================================================
@@ -449,7 +467,7 @@ tasks:
     cmds:
       - echo "=== DNS Resolution Check ==="
       - |
-        for subdomain in argocd grafana keycloak prometheus; do
+        for subdomain in grafana keycloak prometheus alloy; do
           echo -n "$subdomain.maelkloud.com: "
           nslookup $subdomain.maelkloud.com >/dev/null 2>&1 && echo "✓ Resolved" || echo "✗ Failed"
         done

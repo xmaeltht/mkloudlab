@@ -35,57 +35,7 @@ The mkloudlab Kubernetes cluster uses **Tailscale VPN** for private access to al
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Public Access (Cloudflare Tunnel)
-
-### Configuration
-- **Tunnel Name**: mkloudlab-new
-- **Tunnel ID**: 7ed713da-4da4-4354-9ba7-bb0a112873cb
-- **Method**: Token-based (dashboard configured)
-- **Namespace**: cloudflared
-- **Deployment**: 2 replicas for HA
-
-### Traffic Flow
-```
-Internet (HTTPS)
-  ↓
-Cloudflare Edge (TLS termination, DDoS protection, CDN)
-  ↓
-Cloudflare Tunnel (encrypted WireGuard)
-  ↓
-cloudflared pods (Kubernetes)
-  ↓
-Istio Gateway main-gateway-istio:80 (HTTP - internal)
-  ↓
-HTTPRoute (based on hostname)
-  ↓
-Backend Service (Keycloak)
-```
-
-### Key Design Decisions
-
-1. **HTTP Backend**: cloudflared connects to Istio gateway via HTTP (not HTTPS)
-   - Cloudflare handles TLS termination
-   - Simpler configuration (no cert management for tunnel)
-   - Still encrypted end-to-end (Cloudflare → cloudflared uses WireGuard)
-
-2. **No HTTP→HTTPS Redirect**: Removed from Istio config
-   - Would cause redirect loop (client already on HTTPS via Cloudflare)
-   - Gateway accepts HTTP traffic from tunnel
-
-3. **HTTPRoute Configuration**: Routes accept both HTTP and HTTPS
-   - No `sectionName` constraint
-   - Matches traffic on both ports
-
-### Public Apps
-- ✅ **keycloak.maelkloud.com** - Identity & SSO
-
-### Files
-- `platform/networking/cloudflared/deployment.yaml` - cloudflared deployment
-- `platform/networking/cloudflared/namespace.yaml` - Namespace
-- `platform/networking/cloudflared/README.md` - Documentation
-- `platform/networking/cloudflared/SETUP.md` - Detailed setup guide
-
-## Private Access (Tailscale VPN)
+## Tailscale VPN Access
 
 ### Configuration
 - **Operator Version**: 1.92.x
@@ -104,11 +54,11 @@ mkloud-gateway subnet router (Tailscale operator in K8s)
   ↓
 Route to 172.16.16.150 (main-gateway-istio LoadBalancer IP)
   ↓
-Istio Gateway (HTTP)
+Istio Gateway (HTTP/HTTPS)
   ↓
 HTTPRoute (based on Host header)
   ↓
-Backend Service (Grafana, Prometheus, etc.)
+Backend Service (Keycloak, Grafana, Prometheus, etc.)
 ```
 
 ### Key Design Decisions
@@ -123,14 +73,15 @@ Backend Service (Grafana, Prometheus, etc.)
    - Routing based on HTTP Host header
    - Simplified network policy management
 
-3. **No MagicDNS Complexity**:
-   - Services accessed via IP + Host header
-   - Example: `curl -H "Host: grafana.maelkloud.com" http://172.16.16.150`
-   - Could add Tailscale MagicDNS in future if needed
+3. **No sectionName Restrictions**:
+   - HTTPRoutes accept both HTTP and HTTPS traffic
+   - Allows flexible access patterns
+   - HTTPS available with valid certificates
 
-### Private Apps
+### All Services (via Tailscale)
+- ✅ **Keycloak** (keycloak.maelkloud.com) - SSO & Identity
 - ✅ **Grafana** (grafana.maelkloud.com) - Monitoring dashboards
-- ⚠️ **Prometheus** (prometheus.maelkloud.com) - Metrics (pod crashing - needs fix)
+- ✅ **Prometheus** (prometheus.maelkloud.com) - Metrics
 - ✅ **Loki** (loki.maelkloud.com) - Logs
 - ✅ **Tempo** (tempo.maelkloud.com) - Traces
 - ✅ **Alloy** (alloy.maelkloud.com) - Telemetry collector
@@ -140,13 +91,15 @@ Backend Service (Grafana, Prometheus, etc.)
 - `platform/networking/tailscale/ingress-service.yaml` - Subnet router config
 - `platform/networking/tailscale/namespace.yaml` - Namespace
 - `platform/networking/tailscale/source.yaml` - Helm repository
+- `platform/networking/tailscale/README.md` - Quick start guide
+- `platform/networking/tailscale/SETUP.md` - Detailed setup guide
 
 ## Istio Gateway Configuration
 
 ### Main Gateway (main-gateway-istio)
 - **Type**: LoadBalancer (MetalLB)
 - **IP**: 172.16.16.150
-- **Ports**: 80 (HTTP), 443 (HTTPS - currently unused)
+- **Ports**: 80 (HTTP), 443 (HTTPS)
 - **Namespace**: istio-system
 
 ### HTTPRoutes
@@ -156,23 +109,22 @@ Each service has its own HTTPRoute:
 - Direct to ClusterIP backend services
 
 ### HTTP vs HTTPS
-- **Current**: All traffic uses HTTP (port 80)
-- **Cloudflare**: Handles HTTPS for public apps
-- **Tailscale**: VPN encryption for private apps
-- **Future**: Could enable HTTPS with cert-manager if needed
+- **HTTP (port 80)**: Always available
+- **HTTPS (port 443)**: Available with valid certificates
+- **Tailscale**: VPN encryption for all traffic
+- **Certificates**: cert-manager with Let's Encrypt
 
 ## DNS Configuration
 
-### Public DNS (Cloudflare)
-- **Domain**: maelkloud.com
-- **Zone ID**: a1c69d5eb3fd80d8b015183e3eb07c8d
-- **Record**: keycloak.maelkloud.com → CNAME → {tunnel-id}.cfargotunnel.com
-- **Managed by**: Cloudflare Tunnel (auto-created)
+### Local DNS (/etc/hosts)
+Services accessible via local DNS resolution:
+```bash
+172.16.16.150 keycloak.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com
+```
 
 ### Internal DNS
 - **CoreDNS**: Kubernetes default
 - **Service Discovery**: {service}.{namespace}.svc.cluster.local
-- **External-DNS**: Monitors Gateway/Ingress resources (currently disabled for tunnel hostnames)
 
 ## MetalLB Configuration
 
@@ -199,14 +151,7 @@ Each service has its own HTTPRoute:
 
 ## Security Considerations
 
-### Public Apps (Cloudflare Tunnel)
-- ✅ DDoS protection (Cloudflare)
-- ✅ WAF capabilities (Cloudflare)
-- ✅ TLS 1.3 encryption
-- ✅ No exposed ports on home network
-- ✅ Automatic cert rotation (Cloudflare managed)
-
-### Private Apps (Tailscale)
+### Tailscale VPN
 - ✅ Zero-trust network (device authentication)
 - ✅ WireGuard encryption
 - ✅ ACLs in Tailscale admin (can restrict access per user/device)
@@ -217,26 +162,21 @@ Each service has its own HTTPRoute:
 - ✅ Network policies (Cilium + Kyverno)
 - ✅ Istio mTLS (service-to-service)
 - ✅ RBAC (Kubernetes)
-- ⚠️ Gateway doesn't use HTTPS internally (acceptable - trust internal network)
+- ✅ TLS certificates (cert-manager + Let's Encrypt)
 
 ## Accessing Services
 
-### From Internet (Public Apps)
-```bash
-# Keycloak
-https://keycloak.maelkloud.com
-```
-
-### From Tailscale VPN (Private Apps)
+### From Tailscale VPN
 ```bash
 # Connect to Tailscale first
 tailscale up
 
-# Access via gateway IP with Host header
-curl -H "Host: grafana.maelkloud.com" http://172.16.16.150
+# Add to /etc/hosts
+echo "172.16.16.150 keycloak.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com" | sudo tee -a /etc/hosts
 
-# Or use browser (configure /etc/hosts or use extension to set Host header)
-# Future: Could use Tailscale MagicDNS for easier access
+# Access via browser
+# HTTP:  http://grafana.maelkloud.com
+# HTTPS: https://grafana.maelkloud.com
 ```
 
 ### From Within Cluster
@@ -250,72 +190,81 @@ curl -H "Host: grafana.maelkloud.com" http://main-gateway-istio.istio-system.svc
 
 ## Troubleshooting
 
-### Cloudflare Tunnel Issues
+### Can't reach services
 
-**530 Error**:
-- Check cloudflared logs: `kubectl logs -n cloudflared deployment/cloudflared`
-- Verify tunnel is connected and has correct config
-- Check backend service is responding
+**Check Tailscale connection:**
+```bash
+tailscale status | grep mkloud-gateway
+```
 
-**404 Error**:
-- Verify HTTPRoute doesn't have `sectionName` constraint
-- Check route is attached to gateway
-- Verify hostname matches
+**Check subnet router:**
+```bash
+kubectl get pods -n tailscale
+kubectl logs -n tailscale -l app=connector
+```
 
-**502 Bad Gateway**:
-- Backend service is down
-- Check: `kubectl get pods -n keycloak`
-- Test direct access: `curl http://10.98.195.252:80`
+**Verify routes approved:**
+Visit Tailscale admin → Machines → mkloud-gateway → Routes
 
-### Tailscale Issues
+**Check hostNetwork enabled:**
+```bash
+kubectl get statefulset -n tailscale -o jsonpath='{.items[0].spec.template.spec.hostNetwork}'
+# Should output: true
+```
 
-**Can't reach 172.16.16.150**:
-- Check subnet router: `kubectl get pods -n tailscale`
-- Verify routes approved in Tailscale admin
-- Check hostNetwork patch applied: `kubectl get sts -n tailscale -o jsonpath='{.items[0].spec.template.spec.hostNetwork}'`
+### 404 from Gateway
 
-**404 from Gateway**:
-- Same as Cloudflare - check HTTPRoute configuration
-- Verify Host header is set correctly
+**Check HTTPRoute configuration:**
+```bash
+kubectl get httproute grafana-route -n observability -o yaml | grep sectionName
+# Should have NO output (sectionName should be removed)
+```
+
+**Verify route is attached to gateway:**
+```bash
+kubectl describe httproute grafana-route -n observability
+```
+
+### Gateway IP not accessible
+
+**Verify MetalLB assigned the IP:**
+```bash
+kubectl get svc main-gateway-istio -n istio-system
+# EXTERNAL-IP should be 172.16.16.150
+```
+
+**Test from within cluster:**
+```bash
+kubectl run test --image=nicolaka/netshoot -it --rm -- \
+  curl -H "Host: grafana.maelkloud.com" http://172.16.16.150
+```
 
 ### General Network Issues
 
-**Pods can't communicate**:
-- Check Cilium: `kubectl get pods -n kube-system -l app.kubernetes.io/name=cilium`
-- Check network policies: `kubectl get networkpolicy -A`
-- Test connectivity: `kubectl run test --image=nicolaka/netshoot -it --rm`
+**Check Cilium:**
+```bash
+kubectl get pods -n kube-system -l app.kubernetes.io/name=cilium
+```
 
-## Future Enhancements
-
-### Potential Improvements
-1. **MagicDNS Integration**: Easier access to private services (grafana.tailnet-name.ts.net)
-2. **HTTPS on Gateway**: Add cert-manager for internal HTTPS
-3. **More Public Apps**: Portfolio, blog, APIs via same tunnel
-4. **Tailscale SSH**: Direct SSH to nodes via Tailscale
-5. **Per-service Tailscale Ingress**: Individual Tailscale hostnames for each service
-6. **External-DNS Integration**: Auto-create DNS records for new services
-
-### Monitoring Improvements
-1. **Fix Prometheus**: Investigate CrashLoopBackOff
-2. **Path-based Routing**: Fix Loki/Tempo routes (might need specific paths)
-3. **Auth Layer**: Add OAuth proxy for monitoring tools
-4. **Dashboards**: Pre-configure Grafana dashboards for cluster metrics
+**Check network policies:**
+```bash
+kubectl get networkpolicy -A
+```
 
 ## Cost Analysis
 
 ### Current Setup
-- **Cloudflare**: Free tier (unlimited bandwidth for tunnel)
 - **Tailscale**: Free tier (100 devices, 1 subnet router)
 - **Infrastructure**: Self-hosted (Vagrant VMs)
+- **Certificates**: Free (Let's Encrypt)
 
 ### At Scale
-- **Cloudflare**: Scales for free (tunnel + CDN)
 - **Tailscale**: May need paid plan for multiple subnet routers or more devices
 - **Infrastructure**: Consider cloud Kubernetes if VMs become limiting
 
 ## References
 
-- Cloudflare Tunnel Docs: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+- Tailscale Operator: https://tailscale.com/kb/1236/kubernetes-operator
 - Tailscale Subnet Router: https://tailscale.com/kb/1019/subnets
 - Istio Gateway API: https://istio.io/latest/docs/tasks/traffic-management/ingress/gateway-api/
 - Cilium Network Policies: https://docs.cilium.io/en/stable/security/policy/
