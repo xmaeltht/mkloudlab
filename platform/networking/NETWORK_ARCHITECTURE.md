@@ -2,26 +2,19 @@
 
 ## Summary
 
-The mkloudlab Kubernetes cluster uses a **hybrid networking approach**:
-- **Public Access**: Cloudflare Tunnel for public-facing apps (Keycloak)
-- **Private Access**: Tailscale VPN for internal/admin tools (Monitoring stack)
+The mkloudlab Kubernetes cluster uses **Tailscale VPN** for private access to all services:
+- **Private Access**: Tailscale VPN for all applications (Keycloak, Monitoring stack)
+- **No Public Access**: All services require Tailscale VPN connection
 
 ## Architecture Diagram
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        PUBLIC INTERNET ACCESS                        │
-│                                                                       │
-│   User → Cloudflare (HTTPS) → Tunnel → cloudflared → Istio Gateway  │
-│                                                                       │
-│   ✅ keycloak.maelkloud.com (Keycloak SSO)                           │
-└─────────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────────┐
 │                      PRIVATE VPN ACCESS (Tailscale)                  │
 │                                                                       │
 │   Your Devices → Tailscale VPN → mkloud-gateway → Istio Gateway     │
 │                                                                       │
+│   ✅ keycloak.maelkloud.com (SSO & Identity)                         │
 │   ✅ grafana.maelkloud.com (Monitoring Dashboards)                   │
 │   ✅ prometheus.maelkloud.com (Metrics)                              │
 │   ✅ loki.maelkloud.com (Logs)                                       │

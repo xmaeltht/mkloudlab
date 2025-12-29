@@ -1,4 +1,0 @@
-# Never commit secrets
-secret.yaml
-credentials.json
-*.json
