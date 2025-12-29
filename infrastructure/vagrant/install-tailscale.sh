@@ -1,6 +1,24 @@
 #!/bin/bash
 # Install Tailscale on Ubuntu 24.04
 # This script should be run on each Vagrant VM
+#
+# ⚠️ DEPRECATED - NOT RECOMMENDED ⚠️
+#
+# This script is no longer recommended. Instead, use the Tailscale Kubernetes Operator
+# which provides subnet routing without requiring Tailscale on each VM.
+#
+# See: platform/networking/tailscale/README.md for the recommended approach.
+#
+# The operator approach:
+# - Simpler management (one deployment vs per-VM setup)
+# - Automatic HA and failover
+# - Better integration with Kubernetes
+# - No manual authentication per VM
+#
+# Tailscale has been disabled on all VMs in favor of the operator.
+# This script is kept for reference only.
+#
+# If you still want to proceed with VM-level installation (not recommended), continue below.
 
 set -euo pipefail
 

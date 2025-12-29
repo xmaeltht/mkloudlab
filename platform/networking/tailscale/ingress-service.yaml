@@ -5,8 +5,12 @@
 # IMPORTANT: The connector StatefulSet must be manually patched with hostNetwork: true
 # to access MetalLB IPs which are only available on the host network, not the pod network.
 #
+# ⚠️ NOTE: This patch is NOT persistent! If the StatefulSet is recreated (e.g., by deleting
+# and reapplying this Connector resource), you must reapply the patch.
+#
 # After applying this file, run:
-# kubectl patch statefulset <sts-name> -n tailscale --type='json' \
+# STS_NAME=$(kubectl get statefulset -n tailscale -o jsonpath='{.items[0].metadata.name}')
+# kubectl patch statefulset $STS_NAME -n tailscale --type='json' \
 #   -p='[{"op": "add", "path": "/spec/template/spec/hostNetwork", "value": true},
 #        {"op": "add", "path": "/spec/template/spec/dnsPolicy", "value": "ClusterFirstWithHostNet"}]'
 ---

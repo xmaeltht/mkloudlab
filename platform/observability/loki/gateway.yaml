@@ -28,7 +28,6 @@ spec:
   parentRefs:
   - name: main-gateway
     namespace: istio-system
-    sectionName: https-loki
   hostnames:
   - loki.maelkloud.com
   rules:
