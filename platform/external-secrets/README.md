@@ -17,8 +17,7 @@ This directory contains the configuration for External Secrets Operator (ESO), w
 │  Operator            │
 └──────────┬───────────┘
            │
-           ├─→ Keycloak namespace
-           └─→ SonarQube namespace
+           └─→ Keycloak namespace
 ```
 
 ## Components
@@ -53,11 +52,6 @@ Secrets are stored in the `secrets-store` namespace and synced to target namespa
 - `keycloak-admin` - Admin credentials
 - `keycloak-postgresql` - Database credentials
 
-**SonarQube Secrets:**
-- `sonarqube-admin` - Admin credentials
-- `sonarqube-postgresql` - Database credentials
-- `sonarqube-monitoring` - Monitoring passcode
-
 ### How It Works
 
 1. **Source Secrets**: Actual values stored in `secrets-store` namespace
@@ -78,7 +72,6 @@ kubectl get externalsecret keycloak-admin -n keycloak -o yaml
 
 # Check if secrets are synced
 kubectl get secrets -n keycloak
-kubectl get secrets -n sonarqube
 ```
 
 ### Updating Secrets

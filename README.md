@@ -64,7 +64,7 @@ Configure sensitive resources that are not in Git.
 
 | Directory | Description |
 | --------- | ----------- |
-| `platform/` | **Core Platform**: Flux, Istio, Observability, Identity (Keycloak), DevTools (SonarQube) |
+| `platform/` | **Core Platform**: Flux, Istio, Observability, Identity (Keycloak) |
 | `platform/observability/` | **Consolidated Observability Stack**: Prometheus, Grafana, Alloy, Tempo (all in `observability` namespace). |
 | `infrastructure/` | **IaC**: Terraform (Cloudflare) and Vagrant (local VMs) |
 | `docs/` | **Documentation**: Runbooks and Tasks reference. |

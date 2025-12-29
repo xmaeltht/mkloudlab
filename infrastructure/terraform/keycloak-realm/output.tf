@@ -45,11 +45,6 @@ output "prometheus_oidc_client_secret" {
   sensitive   = true
 }
 
-output "sonarqube_saml_client_id" {
-  description = "The client ID for SonarQube SAML client"
-  value       = keycloak_saml_client.sonarqube.client_id
-}
-
 # Output admin group information
 output "admin_group_id" {
   description = "The ID of the admin group"
@@ -67,9 +62,6 @@ output "client_redirect_uris" {
   value = merge(
     {
       for k, v in local.oidc_clients : k => v.redirect_uris
-    },
-    {
-      "sonarqube" = keycloak_saml_client.sonarqube.valid_redirect_uris
     }
   )
 }

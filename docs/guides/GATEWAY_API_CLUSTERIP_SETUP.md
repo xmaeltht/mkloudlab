@@ -47,7 +47,6 @@ Two mechanisms ensure no LoadBalancer services are created:
 The following applications are configured with Gateway API:
 
 - **Keycloak**: `keycloak.maelkloud.com`
-- **SonarQube**: `sonarqube.maelkloud.com`
 - **Grafana**: `grafana.maelkloud.com`
 - **Prometheus**: `prometheus.maelkloud.com`
 - **Loki**: `loki.maelkloud.com`
@@ -58,7 +57,7 @@ The following applications are configured with Gateway API:
 A shared main gateway configuration is available in `platform/istio/main-gateway.yaml`:
 - Namespace: `istio-system`
 - Hostname: `*.maelkloud.com`
-- Includes all application certificates (keycloak, sonarqube, grafana, prometheus, loki, tempo)
+- Includes all application certificates (keycloak, grafana, prometheus, loki, tempo)
 
 **Note**: This is optional. Each application currently uses its own Gateway resource, which is the recommended approach for better isolation and management.
 
@@ -115,7 +114,6 @@ observability  grafana-gateway-istio      ClusterIP
 observability  loki-gateway-istio         ClusterIP
 observability  prometheus-gateway-istio   ClusterIP
 observability  tempo-gateway-istio        ClusterIP
-sonarqube      sonarqube-gateway-istio    ClusterIP
 ```
 
 ### Check for Any LoadBalancer Services
@@ -238,7 +236,6 @@ If the Kyverno policy is not converting services:
 
 ### Active Services (All ClusterIP)
 - `keycloak/keycloak-gateway-istio` → ClusterIP ✅
-- `sonarqube/sonarqube-gateway-istio` → ClusterIP ✅
 - `observability/grafana-gateway-istio` → ClusterIP ✅
 - `observability/prometheus-gateway-istio` → ClusterIP ✅
 - `observability/loki-gateway-istio` → ClusterIP ✅
@@ -256,4 +253,3 @@ If the Kyverno policy is not converting services:
 - [Gateway API Specification](https://gateway-api.sigs.k8s.io/)
 - [Kyverno Policies](https://kyverno.io/docs/writing-policies/)
 - [Cert-Manager Cloudflare DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/)
-

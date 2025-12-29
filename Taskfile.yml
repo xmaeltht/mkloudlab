@@ -76,8 +76,6 @@ tasks:
       - echo "Application layer..."
       - kubectl apply -f platform/flux/apps/keycloak.yaml
       # keycloak-gateway removed - keycloak kustomization handles all resources
-      - kubectl apply -f platform/flux/apps/sonarqube.yaml
-      # sonarqube-gateway removed - sonarqube HelmRelease handles deployment
       - echo "Observability layer..."
       - kubectl apply -f platform/flux/apps/alloy.yaml
       - kubectl apply -f platform/flux/apps/tempo.yaml
@@ -285,7 +283,7 @@ tasks:
       - |
         if [ -z "{{.COMPONENT}}" ]; then
           echo "Usage: task logs -- <component-name>"
-          echo "Available components: argocd, keycloak, sonarqube, prometheus, grafana, alloy"
+          echo "Available components: argocd, keycloak, prometheus, grafana, alloy"
           exit 1
         fi
         kubectl logs -n {{.COMPONENT}} -l app={{.COMPONENT}} --tail=100 -f
@@ -451,7 +449,7 @@ tasks:
     cmds:
       - echo "=== DNS Resolution Check ==="
       - |
-        for subdomain in argocd grafana keycloak sonarqube prometheus; do
+        for subdomain in argocd grafana keycloak prometheus; do
           echo -n "$subdomain.maelkloud.com: "
           nslookup $subdomain.maelkloud.com >/dev/null 2>&1 && echo "✓ Resolved" || echo "✗ Failed"
         done
@@ -551,7 +549,6 @@ tasks:
       - 'echo "Flux: Use `flux get all -n flux-system` to view status"'
       - 'echo "Grafana: https://grafana.maelkloud.com"'
       - 'echo "Keycloak: https://keycloak.maelkloud.com"'
-      - 'echo "SonarQube: https://sonarqube.maelkloud.com"'
       - 'echo "Prometheus: https://prometheus.maelkloud.com"'
       - echo ""
       - echo "=== Gateway Status ==="

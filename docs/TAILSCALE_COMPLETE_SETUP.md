@@ -45,7 +45,6 @@ All services accessible via:
 - **IP**: 172.16.16.150 (MetalLB)
 - **Domains** (via /etc/hosts):
   - keycloak.maelkloud.com
-  - sonarqube.maelkloud.com
   - grafana.maelkloud.com
   - prometheus.maelkloud.com
   - loki.maelkloud.com
@@ -112,7 +111,7 @@ curl -H "Host: grafana.maelkloud.com" http://mkloud-gateway
 ### On Your Mac (/etc/hosts)
 
 ```
-172.16.16.150  keycloak.maelkloud.com sonarqube.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com
+172.16.16.150  keycloak.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com
 ```
 
 ### Tailscale ACLs

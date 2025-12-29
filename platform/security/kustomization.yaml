@@ -7,7 +7,6 @@ resources:
   - network-policies.yaml
   - rbac-policies.yaml
   - resource-management/observability.yaml
-  - resource-management/sonarqube.yaml
   - resource-management/keycloak.yaml
   # namespace-security.yaml excluded - namespaces are created by HelmReleases/Kustomizations
   # To apply namespace labels, use kubectl label commands or include in individual app configs

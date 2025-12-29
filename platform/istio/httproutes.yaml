@@ -17,24 +17,6 @@ spec:
     - name: keycloak-keycloak-keycloakx-http
       port: 80
 ---
-# HTTPRoute for SonarQube
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: sonarqube-route
-  namespace: sonarqube
-spec:
-  parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-sonarqube
-  hostnames:
-  - sonarqube.maelkloud.com
-  rules:
-  - backendRefs:
-    - name: sonarqube-sonarqube-sonarqube
-      port: 9000
----
 # HTTPRoute for Grafana
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute

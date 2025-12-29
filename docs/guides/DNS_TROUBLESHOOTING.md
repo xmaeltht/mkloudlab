@@ -171,8 +171,6 @@ If external-dns is not working, you can manually create DNS records:
 2. **Individual Records** (if needed):
    - Create A records for each subdomain:
      - `keycloak.maelkloud.com` → `<LoadBalancer IP>`
-     - `sonarqube.maelkloud.com` → `<LoadBalancer IP>`
      - etc.
 
 **Note**: If using Cloudflare proxy (orange cloud), ensure SSL/TLS mode is set to "Full" or "Full (strict)" for HTTPS to work.
-

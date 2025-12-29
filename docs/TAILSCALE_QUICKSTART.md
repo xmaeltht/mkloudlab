@@ -37,7 +37,7 @@ vagrant ssh kcontroller -c 'sudo tailscale up --advertise-routes=172.16.16.0/24 
 Add to `/etc/hosts` on your Mac/laptop:
 
 ```bash
-echo "172.16.16.150  keycloak.maelkloud.com sonarqube.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com" | sudo tee -a /etc/hosts
+echo "172.16.16.150  keycloak.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com" | sudo tee -a /etc/hosts
 ```
 
 ### Step 4: Test Access ✅

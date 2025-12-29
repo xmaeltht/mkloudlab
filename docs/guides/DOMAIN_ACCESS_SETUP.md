@@ -1,6 +1,6 @@
 # Domain-Based Service Access Setup
 
-This guide explains how services are exposed via domain names (e.g., `keycloak.maelkloud.com`, `sonarqube.maelkloud.com`) using Istio Gateway API, MetalLB, and External-DNS.
+This guide explains how services are exposed via domain names (e.g., `keycloak.maelkloud.com`, `grafana.maelkloud.com`) using Istio Gateway API, MetalLB, and External-DNS.
 
 ## Quick Start
 
@@ -50,7 +50,6 @@ Once DNS records are created (may take a few minutes):
 ```bash
 # Test HTTPS access
 curl -I https://keycloak.maelkloud.com
-curl -I https://sonarqube.maelkloud.com
 curl -I https://grafana.maelkloud.com
 curl -I https://alloy.maelkloud.com
 ```
@@ -59,7 +58,6 @@ curl -I https://alloy.maelkloud.com
 
 All services are accessible via their respective subdomains under `maelkloud.com`:
 - **Keycloak**: `keycloak.maelkloud.com`
-- **SonarQube**: `sonarqube.maelkloud.com`
 - **Grafana**: `grafana.maelkloud.com`
 - **Prometheus**: `prometheus.maelkloud.com`
 - **Loki**: `loki.maelkloud.com`
@@ -217,7 +215,6 @@ kubectl logs -n networking -l app.kubernetes.io/name=external-dns
 ```bash
 # Test HTTPS access (should return 200 or service-specific response)
 curl -I https://keycloak.maelkloud.com
-curl -I https://sonarqube.maelkloud.com
 curl -I https://grafana.maelkloud.com
 curl -I https://alloy.maelkloud.com
 ```
@@ -377,4 +374,3 @@ To add a new service:
 - [External-DNS Documentation](https://github.com/kubernetes-sigs/external-dns)
 - [MetalLB Documentation](https://metallb.universe.tf/)
 - [Cert-Manager Cloudflare DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/)
-

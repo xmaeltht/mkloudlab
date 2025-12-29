@@ -27,7 +27,7 @@ echo ""
 # Check current DNS resolution
 echo "Current DNS Resolution:"
 echo "----------------------"
-DOMAINS=("keycloak.maelkloud.com" "sonarqube.maelkloud.com" "grafana.maelkloud.com" "prometheus.maelkloud.com" "loki.maelkloud.com" "tempo.maelkloud.com" "alloy.maelkloud.com")
+DOMAINS=("keycloak.maelkloud.com" "grafana.maelkloud.com" "prometheus.maelkloud.com" "loki.maelkloud.com" "tempo.maelkloud.com" "alloy.maelkloud.com")
 
 for DOMAIN in "${DOMAINS[@]}"; do
     if command -v dig &> /dev/null; then
@@ -101,4 +101,3 @@ echo "   - Go to Cloudflare dashboard"
 echo "   - Delete old A records for *.maelkloud.com or individual subdomains"
 echo "   - Create new A record: * → $LB_IP (or individual subdomains → $LB_IP)"
 echo ""
-

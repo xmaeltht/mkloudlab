@@ -151,7 +151,6 @@ If pages still don't load after trying all above:
    ```bash
    kubectl get pods -n observability
    kubectl get pods -n keycloak
-   kubectl get pods -n sonarqube
    ```
 4. **Check gateway logs for specific errors:**
    ```bash
@@ -171,4 +170,3 @@ If pages still don't load after trying all above:
 - Certificate errors that can't be bypassed
 - CORS errors in console
 - Resources failing to load
-

@@ -31,19 +31,6 @@ spec:
         - name: keycloak-cert
           kind: Secret
           namespace: keycloak
-  - name: https-sonarqube
-    port: 443
-    protocol: HTTPS
-    hostname: "sonarqube.maelkloud.com"
-    allowedRoutes:
-      namespaces:
-        from: All
-    tls:
-      mode: Terminate
-      certificateRefs:
-        - name: sonarqube-cert
-          kind: Secret
-          namespace: sonarqube
   - name: https-grafana
     port: 443
     protocol: HTTPS

@@ -111,7 +111,6 @@ kubectl get clusterpolicies
 ```bash
 # Check application services
 kubectl get pods -n keycloak
-kubectl get pods -n sonarqube
 kubectl get pods -n monitoring
 kubectl get pods -n observability
 

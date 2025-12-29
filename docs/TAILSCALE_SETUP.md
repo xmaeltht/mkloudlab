@@ -93,7 +93,6 @@ Add to your `/etc/hosts` on your Mac:
 
 ```
 172.16.16.150  keycloak.maelkloud.com
-172.16.16.150  sonarqube.maelkloud.com
 172.16.16.150  grafana.maelkloud.com
 172.16.16.150  prometheus.maelkloud.com
 172.16.16.150  loki.maelkloud.com

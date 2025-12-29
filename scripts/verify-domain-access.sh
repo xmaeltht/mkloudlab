@@ -48,7 +48,7 @@ fi
 echo ""
 echo "3. Checking HTTPRoutes..."
 echo "--------------------------"
-SERVICES=("keycloak:keycloak" "sonarqube:sonarqube" "grafana:observability" "prometheus:observability" "loki:observability" "tempo:observability" "alloy:observability")
+SERVICES=("keycloak:keycloak" "grafana:observability" "prometheus:observability" "loki:observability" "tempo:observability" "alloy:observability")
 
 ALL_ROUTES_OK=true
 for SERVICE_INFO in "${SERVICES[@]}"; do
@@ -80,7 +80,7 @@ fi
 echo ""
 echo "4. Checking Certificates..."
 echo "----------------------------"
-CERT_NAMESPACES=("keycloak:keycloak-cert" "sonarqube:sonarqube-cert" "observability:grafana-cert" "observability:prometheus-cert" "observability:loki-cert" "observability:tempo-cert" "observability:alloy-cert")
+CERT_NAMESPACES=("keycloak:keycloak-cert" "observability:grafana-cert" "observability:prometheus-cert" "observability:loki-cert" "observability:tempo-cert" "observability:alloy-cert")
 
 ALL_CERTS_OK=true
 for CERT_INFO in "${CERT_NAMESPACES[@]}"; do
@@ -134,7 +134,7 @@ echo "7. DNS Resolution Test..."
 echo "-------------------------"
 if [ -n "$LB_IP" ]; then
     echo "Testing DNS resolution for services..."
-    DOMAINS=("keycloak.maelkloud.com" "sonarqube.maelkloud.com" "grafana.maelkloud.com" "prometheus.maelkloud.com" "loki.maelkloud.com" "tempo.maelkloud.com" "alloy.maelkloud.com")
+    DOMAINS=("keycloak.maelkloud.com" "grafana.maelkloud.com" "prometheus.maelkloud.com" "loki.maelkloud.com" "tempo.maelkloud.com" "alloy.maelkloud.com")
     
     for DOMAIN in "${DOMAINS[@]}"; do
         if command -v dig &> /dev/null; then
@@ -177,4 +177,3 @@ echo "1. If LoadBalancer IP is assigned, check Cloudflare DNS records"
 echo "2. Wait for external-dns to create/update DNS records (may take a few minutes)"
 echo "3. Test HTTPS access: curl -I https://keycloak.maelkloud.com"
 echo ""
-
