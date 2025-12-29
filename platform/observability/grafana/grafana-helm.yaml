@@ -49,11 +49,6 @@ spec:
       auth.anonymous:
         enabled: true
         org_role: Viewer
-      # Datasource proxy settings
-      datasources:
-        timeout: 60
-        max_idle_conns: 100
-        max_idle_conns_per_host: 10
 
     service:
       type: ClusterIP
