@@ -51,7 +51,7 @@ spec:
             cpu: 500m
             memory: 2Gi
           limits:
-            cpu: 2000m
+            cpu: 1000m  # Limited by namespace ResourceQuota (20 CPU total)
             memory: 4Gi
         storageSpec:
           volumeClaimTemplate:
