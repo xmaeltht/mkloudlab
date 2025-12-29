@@ -18,19 +18,6 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
-  - name: https
-    port: 443
-    protocol: HTTPS
-    hostname: "*.maelkloud.com"
-    allowedRoutes:
-      namespaces:
-        from: All
-    tls:
-      mode: Terminate
-      certificateRefs:
-        - name: argocd-cert
-          kind: Secret
-          namespace: argocd
   - name: https-keycloak
     port: 443
     protocol: HTTPS
