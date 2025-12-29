@@ -29,6 +29,21 @@ spec:
         service:
           port: 80
           targetPort: 9090
+        # Increase probe timeouts to handle WAL replay on startup
+        # WAL replay can take several minutes with large amounts of data
+        livenessProbe:
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 10
+        readinessProbe:
+          timeoutSeconds: 10
+          periodSeconds: 10
+          failureThreshold: 120
+        startupProbe:
+          enabled: true
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 60  # 60 * 30s = 30 minutes max startup time
         storageSpec:
           volumeClaimTemplate:
             spec:
