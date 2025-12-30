@@ -47,10 +47,11 @@ jobs:
             exit 0
           fi
 
+          # Run kubeconform and capture output, ignoring exit code
           OUTPUT=$(echo "$MANIFESTS" | xargs kubeconform -summary -output=text \
               -ignore-missing-schemas \
               -schema-location default \
-              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' 2>&1)
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' 2>&1) || true
 
           echo "$OUTPUT"
 
