@@ -1,0 +1,43 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow traffic from main-gateway in istio-system
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: main-gateway
+      ports:
+        - port: 9090
+          protocol: TCP
+    # Allow traffic from prometheus-gateway if it exists
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              gateway.networking.k8s.io/gateway-name: prometheus-gateway
+      ports:
+        - port: 9090
+          protocol: TCP
+    # Allow traffic from within observability namespace
+    - from:
+        - podSelector: {}
+      ports:
+        - port: 9090
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
