@@ -150,6 +150,9 @@ spec:
           otelcol.exporter.otlp "traces" {
             client {
               endpoint = "tempo.observability.svc.cluster.local:4317"
+              tls {
+                insecure = true
+              }
             }
           }
 
