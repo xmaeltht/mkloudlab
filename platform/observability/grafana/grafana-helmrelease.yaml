@@ -1,0 +1,99 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: grafana
+      version: 7.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    adminPassword: admin
+
+    # Datasources configuration
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus-kube-prometheus-prometheus.observability.svc.cluster.local:9090
+            isDefault: true
+            jsonData:
+              httpMethod: POST
+              timeInterval: 15s
+
+          - name: Loki
+            type: loki
+            access: proxy
+            url: http://loki.observability.svc.cluster.local:3100
+            jsonData:
+              maxLines: 1000
+
+          - name: Tempo
+            type: tempo
+            access: proxy
+            url: http://tempo.observability.svc.cluster.local:3100
+            jsonData:
+              httpMethod: GET
+              tracesToLogs:
+                datasourceUid: loki
+                filterBySpanID: false
+                filterByTraceID: true
+                spanStartTimeShift: -2m
+                spanEndTimeShift: 2m
+                tags:
+                  - key: service.name
+                    value: service_name
+
+    # Grafana configuration
+    grafana.ini:
+      server:
+        domain: grafana.maelkloud.com
+        root_url: https://grafana.maelkloud.com
+        serve_from_sub_path: false
+        protocol: http
+        http_addr: 0.0.0.0
+        http_port: 3000
+        enable_gzip: true
+
+      security:
+        cookie_samesite: lax
+        cookie_secure: true
+
+      auth.anonymous:
+        enabled: true
+        org_role: Viewer
+
+      datasources:
+        max_idle_conns: 100
+        max_idle_conns_per_host: 10
+        timeout: 60
+
+      log:
+        level: info
+        mode: console
+
+    # Persistence
+    persistence:
+      enabled: true
+      storageClassName: local-path
+      size: 2Gi
+
+    # Plugins
+    plugins:
+      - grafana-piechart-panel
+      - grafana-clock-panel
+
+    # Service
+    service:
+      port: 80
