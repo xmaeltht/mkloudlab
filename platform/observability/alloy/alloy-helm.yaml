@@ -66,12 +66,60 @@ spec:
 
           // Convert OTLP metrics to Prometheus format
           otelcol.exporter.prometheus "default" {
-            forward_to = [prometheus.remote_write.metrics.receiver]
+            forward_to = [prometheus.relabel.k8s_metrics.receiver]
           }
 
           // Convert OTLP logs to Loki format
           otelcol.exporter.loki "default" {
             forward_to = [loki.write.k8s.receiver]
+          }
+
+          // Relabel Kubernetes metrics for better organization and reduced cardinality
+          prometheus.relabel "k8s_metrics" {
+            forward_to = [prometheus.remote_write.metrics.receiver]
+
+            // Add cluster label to all metrics
+            rule {
+              target_label = "cluster"
+              replacement  = "mkloudlab"
+            }
+
+            // Drop high-cardinality pod metrics (keep only aggregated metrics)
+            rule {
+              source_labels = ["__name__"]
+              regex         = "kube_pod_info|kube_pod_status_phase"
+              action        = "keep"
+            }
+
+            // Standardize Kubernetes label names
+            rule {
+              source_labels = ["namespace"]
+              target_label  = "k8s_namespace"
+            }
+
+            rule {
+              source_labels = ["pod"]
+              target_label  = "k8s_pod"
+            }
+
+            rule {
+              source_labels = ["container"]
+              target_label  = "k8s_container"
+            }
+
+            // Keep important kube-state-metrics
+            rule {
+              source_labels = ["__name__"]
+              regex         = "kube_(deployment|statefulset|daemonset|service|ingress|node)_.*"
+              action        = "keep"
+            }
+
+            // Drop internal Kubernetes system metrics that are too verbose
+            rule {
+              source_labels = ["namespace"]
+              regex         = "kube-system|kube-public|kube-node-lease"
+              action        = "drop"
+            }
           }
 
           // Remote write metrics into in-cluster Prometheus
