@@ -22,11 +22,32 @@ datasources:
         url: http://prometheus-server.observability.svc.cluster.local:80
         access: proxy
         isDefault: true
+        uid: prometheus
       - name: Loki
         type: loki
         url: http://loki.observability.svc.cluster.local:3100
         access: proxy
+        uid: loki
       - name: Tempo
         type: tempo
         url: http://tempo.observability.svc.cluster.local:3100
         access: proxy
+        uid: tempo
+        jsonData:
+          tracesToLogs:
+            datasourceUid: loki
+            filterByTraceID: true
+            filterBySpanID: false
+            tags:
+              - key: service.name
+                value: service_name
+          tracesToMetrics:
+            datasourceUid: prometheus
+          serviceMap:
+            datasourceUid: prometheus
+          nodeGraph:
+            enabled: true
+          search:
+            hide: false
+          lokiSearch:
+            datasourceUid: loki
