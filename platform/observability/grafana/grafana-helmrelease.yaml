@@ -28,6 +28,7 @@ spec:
             access: proxy
             url: http://prometheus-kube-prometheus-prometheus.observability.svc.cluster.local:9090
             isDefault: true
+            uid: prometheus
             jsonData:
               httpMethod: POST
               timeInterval: 15s
@@ -36,6 +37,7 @@ spec:
             type: loki
             access: proxy
             url: http://loki.observability.svc.cluster.local:3100
+            uid: loki
             jsonData:
               maxLines: 1000
 
@@ -43,6 +45,7 @@ spec:
             type: tempo
             access: proxy
             url: http://tempo.observability.svc.cluster.local:3100
+            uid: tempo
             jsonData:
               httpMethod: GET
               tracesToLogs:
@@ -54,6 +57,16 @@ spec:
                 tags:
                   - key: service.name
                     value: service_name
+              tracesToMetrics:
+                datasourceUid: prometheus
+              serviceMap:
+                datasourceUid: prometheus
+              nodeGraph:
+                enabled: true
+              search:
+                hide: false
+              lokiSearch:
+                datasourceUid: loki
 
     # Grafana configuration
     grafana.ini:
