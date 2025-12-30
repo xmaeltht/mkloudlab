@@ -51,13 +51,13 @@ jobs:
               -ignore-missing-schemas \
               -schema-location default \
               -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' 2>&1)
-          
+
           echo "$OUTPUT"
-          
+
           # Only fail if there are invalid resources (not just skipped ones)
           if echo "$OUTPUT" | grep -q "Invalid: [1-9]"; then
             echo "Validation failed: Found invalid resources"
             exit 1
           fi
-          
+
           echo "Validation passed: All resources are valid or skipped"
