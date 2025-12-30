@@ -8,7 +8,7 @@ spec:
   interval: 1m
   url: https://github.com/xmaeltht/mkloudlab.git
   ref:
-    branch: feature/mkloud
+    branch: main
   ignore: |
     # Ignore non-manifest files
     .git/
