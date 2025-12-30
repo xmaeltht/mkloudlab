@@ -49,7 +49,7 @@ spec:
           // METRICS (Prometheus compatible)
           // =============================
 
-          // Receive OTLP metrics/logs from instrumented workloads
+          // Receive OTLP metrics from instrumented workloads
           otelcol.receiver.otlp "default" {
             grpc {
               endpoint = "0.0.0.0:4317"
@@ -69,9 +69,18 @@ spec:
             forward_to = [prometheus.remote_write.metrics.receiver]
           }
 
-          // Convert OTLP logs to Loki format
-          otelcol.exporter.loki "default" {
-            forward_to = [loki.write.k8s.receiver]
+          // Scrape Prometheus metrics from Kubernetes services
+          // This discovers and scrapes services with prometheus.io/scrape annotation
+          prometheus.scrape "kubernetes" {
+            targets = discovery.kubernetes.pods.targets
+            forward_to = [prometheus.remote_write.metrics.receiver]
+            scrape_interval = "30s"
+            scrape_timeout = "10s"
+          }
+
+          // Discover Kubernetes pods for metric scraping
+          discovery.kubernetes "pods" {
+            role = "pod"
           }
 
           // Remote write metrics into in-cluster Prometheus
@@ -84,6 +93,22 @@ spec:
           // =============================
           // LOGS
           // =============================
+
+          // Collect logs from Kubernetes pods
+          loki.source.kubernetes "pods" {
+            targets = discovery.kubernetes.pods_logs.targets
+            forward_to = [loki.write.k8s.receiver]
+          }
+
+          // Discover Kubernetes pods for log collection
+          discovery.kubernetes "pods_logs" {
+            role = "pod"
+          }
+
+          // Convert OTLP logs to Loki format
+          otelcol.exporter.loki "default" {
+            forward_to = [loki.write.k8s.receiver]
+          }
 
           // Ship logs to Loki
           loki.write "k8s" {
@@ -99,6 +124,7 @@ spec:
           // TRACES
           // =============================
 
+          // Export traces to Tempo
           otelcol.exporter.otlp "traces" {
             client {
               endpoint = "tempo.observability.svc.cluster.local:4317"
@@ -153,10 +179,13 @@ spec:
       create: true
       rules:
         - apiGroups: [""]
-          resources: ["pods", "pods/log", "namespaces", "nodes", "events"]
+          resources: ["pods", "pods/log", "pods/status", "namespaces", "nodes", "events", "services", "endpoints"]
           verbs: ["get", "list", "watch"]
         - apiGroups: ["apps"]
           resources: ["daemonsets", "deployments", "statefulsets", "replicasets"]
+          verbs: ["get", "list", "watch"]
+        - apiGroups: ["monitoring.coreos.com"]
+          resources: ["servicemonitors", "podmonitors"]
           verbs: ["get", "list", "watch"]
 
     extraVolumeMounts:
