@@ -198,7 +198,7 @@ spec:
           port: 3200
 
 ---
-# Allow ingress to Alloy from Istio Gateway
+# Allow ingress to Alloy from Istio Gateway and application namespaces
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -228,3 +228,11 @@ spec:
       ports:
         - protocol: TCP
           port: 12345
+    # Allow OTLP from any namespace (for telemetry ingestion)
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 4317  # OTLP gRPC
+        - protocol: TCP
+          port: 4318  # OTLP HTTP
