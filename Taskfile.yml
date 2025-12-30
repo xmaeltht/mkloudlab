@@ -78,6 +78,7 @@ tasks:
       - kubectl apply -f platform/flux/apps/cluster-config.yaml
       - echo "Networking layer..."
       - kubectl apply -f platform/flux/apps/networking.yaml
+      - kubectl apply -f platform/flux/apps/istio.yaml
       - kubectl apply -f platform/flux/apps/istio-config.yaml
       - echo "Application layer..."
       - kubectl apply -f platform/flux/apps/keycloak.yaml
@@ -233,7 +234,7 @@ tasks:
     desc: Apply all certificate manifests
     cmds:
       - echo "Applying certificate manifests..."
-      - echo "⚠️  Note: Certificates are now managed through Flux kustomizations"
+      - echo "⚠️  Note':' Certificates are now managed through Flux kustomizations"
       - echo "   Individual certificate resources are applied automatically by Flux"
       - echo "✅ Certificate management configured (managed by Flux)"
 
@@ -257,7 +258,7 @@ tasks:
         fi
 
   certificates:describe:
-    desc: Describe certificate issues for troubleshooting. Usage: task certificates:describe [namespace]
+    desc: "Describe certificate issues for troubleshooting. Usage: task certificates:describe [namespace]"
     vars:
       NAMESPACE: '{{.CLI_ARGS | default ""}}'
     cmds:
@@ -395,7 +396,7 @@ tasks:
       - task: install
 
   scale:
-    desc: Scale the cluster nodes (proxy to vagrant:scale). Usage: task scale COUNT=3
+    desc: "Scale the cluster nodes (proxy to vagrant:scale). Usage: task scale COUNT=3"
     vars:
       COUNT: '{{.COUNT | default "1"}}'
     cmds:
