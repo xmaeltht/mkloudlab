@@ -32,7 +32,7 @@ jobs:
       - name: Run kubeconform on all manifests
         run: |
           set +e  # Don't exit on error for this entire step
-          
+
           MANIFESTS=$(find platform services -type f \( -name "*.yaml" -o -name "*.yml" \) \
             ! -path "*/istio-1.21.0/*" \
             ! -path "*/node_modules/*" \
