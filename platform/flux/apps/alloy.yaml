@@ -89,7 +89,7 @@ spec:
           // Remote write metrics into in-cluster Prometheus
           prometheus.remote_write "metrics" {
             endpoint {
-              url = "http://prometheus-server.monitoring.svc.cluster.local:80/api/v1/write"
+              url = "http://prometheus-kube-prometheus-prometheus.observability.svc.cluster.local:9090/api/v1/write"
             }
           }
 
@@ -100,7 +100,7 @@ spec:
           // Ship logs to Loki
           loki.write "k8s" {
             endpoint {
-              url = "http://logging-loki-stack.logging.svc.cluster.local:3100/loki/api/v1/push"
+              url = "http://loki.observability.svc.cluster.local:3100/loki/api/v1/push"
             }
             external_labels = {
               cluster = "mkloudlab",
@@ -113,7 +113,7 @@ spec:
 
           otelcol.exporter.otlp "traces" {
             client {
-              endpoint = "observability-tempo.observability.svc.cluster.local:4317"
+              endpoint = "tempo.observability.svc.cluster.local:4317"
             }
           }
 
