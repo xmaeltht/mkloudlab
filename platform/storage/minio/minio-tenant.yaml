@@ -28,15 +28,18 @@ spec:
           cpu: 1000m
           memory: 2Gi
 
+  # Disable automatic TLS (Gateway handles TLS termination)
+  requestAutoCert: false
+
   # Enable console
   features:
     enableSFTP: false
     bucketDNS: false
 
-  # Configure services
+  # Configure services as ClusterIP (like Grafana)
   exposeServices:
-    console: true
-    minio: true
+    console: false
+    minio: false
 
   # Credentials (for testing, use secrets in production)
   configuration:

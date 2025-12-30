@@ -1,0 +1,22 @@
+# DestinationRule for MinIO services (disable mTLS since MinIO pods don't have Istio sidecars)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: minio
+  namespace: minio
+spec:
+  host: minio.minio.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: minio-console
+  namespace: minio
+spec:
+  host: minio-console.minio.svc.cluster.local
+  trafficPolicy:
+    tls:
+      mode: DISABLE

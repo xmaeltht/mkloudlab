@@ -1,6 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - minio-helm.yaml
+  - minio-tenant.yaml
+  - services.yaml
   - gateway.yaml
   - certificate.yaml
+  - destinationrule.yaml
+  - networkpolicy.yaml

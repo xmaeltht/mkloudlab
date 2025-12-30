@@ -1,0 +1,31 @@
+# MinIO API Service (ClusterIP like Grafana)
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: minio
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9000
+      protocol: TCP
+  selector:
+    v1.min.io/tenant: minio
+---
+# MinIO Console Service (ClusterIP like Grafana)
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  namespace: minio
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9090
+      protocol: TCP
+  selector:
+    v1.min.io/tenant: minio
