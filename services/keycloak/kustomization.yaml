@@ -7,3 +7,5 @@ resources:
   - keycloak.yaml
   - keycloak-gateway.yaml
   - keycloak-cert.yaml
+  - keycloak-destinationrule.yaml
+  - keycloak-networkpolicy.yaml
