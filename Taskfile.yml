@@ -83,6 +83,8 @@ tasks:
       - echo "Application layer..."
       - kubectl apply -f platform/flux/apps/keycloak.yaml
       # keycloak-gateway removed - keycloak kustomization handles all resources
+      - echo "Storage layer..."
+      - kubectl apply -f platform/flux/apps/minio.yaml
       - echo "Observability layer..."
       - kubectl apply -f platform/flux/apps/alloy.yaml
       - kubectl apply -f platform/flux/apps/tempo.yaml
@@ -565,6 +567,8 @@ tasks:
       - 'echo "Grafana: https://grafana.maelkloud.com"'
       - 'echo "Keycloak: https://keycloak.maelkloud.com"'
       - 'echo "Prometheus: https://prometheus.maelkloud.com"'
+      - 'echo "MinIO API: https://minio.maelkloud.com"'
+      - 'echo "MinIO Console: https://minio-console.maelkloud.com"'
       - echo ""
       - echo "=== Gateway Status ==="
       - kubectl get gateways -A 2>/dev/null || echo "No gateways found"

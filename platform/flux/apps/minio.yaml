@@ -1,0 +1,24 @@
+# Flux Kustomization for MinIO
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: minio
+  namespace: flux-system
+spec:
+  interval: 5m
+  path: ./platform/storage/minio
+  prune: true
+  wait: true
+  timeout: 10m
+  sourceRef:
+    kind: GitRepository
+    name: mkloudlab
+  healthChecks:
+    - apiVersion: helm.toolkit.fluxcd.io/v2
+      kind: HelmRelease
+      name: minio
+      namespace: minio
+  dependsOn:
+    - name: networking
+    - name: istio-config
+    - name: cert-manager

@@ -1,0 +1,31 @@
+# Certificate for MinIO API
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-cert
+  namespace: minio
+spec:
+  secretName: minio-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - minio.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
+---
+# Certificate for MinIO Console
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: minio-console-cert
+  namespace: minio
+spec:
+  secretName: minio-console-cert
+  duration: 2160h
+  renewBefore: 360h
+  dnsNames:
+    - minio-console.maelkloud.com
+  issuerRef:
+    name: letsencrypt-dns-cloudflare
+    kind: ClusterIssuer
