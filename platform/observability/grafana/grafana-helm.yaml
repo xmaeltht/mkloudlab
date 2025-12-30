@@ -42,22 +42,18 @@ spec:
         protocol: http
         http_addr: 0.0.0.0
         http_port: 3000
+        enforce_domain: false
       # Security headers for proxy
       security:
         cookie_secure: false
-        cookie_samesite: none
-        allow_embedding: false
-      # Session configuration
-      session:
-        cookie_secure: false
-        cookie_samesite: none
+        cookie_samesite: lax
+        allow_embedding: true
+        csrf_trusted_origins: https://grafana.maelkloud.com
+        csrf_additional_headers: X-Forwarded-For
       # Logging for debugging
       log:
         mode: console
         level: info
-      auth:
-        disable_login_form: false
-        disable_signout_menu: false
       auth.anonymous:
         enabled: false
       # Datasource proxy settings
@@ -65,6 +61,14 @@ spec:
         timeout: 60
         max_idle_conns: 100
         max_idle_conns_per_host: 10
+
+    # Environment variables for proper reverse proxy operation
+    env:
+      GF_SERVER_ROOT_URL: https://grafana.maelkloud.com
+      GF_SERVER_DOMAIN: grafana.maelkloud.com
+      GF_SERVER_ENFORCE_DOMAIN: "false"
+      GF_SECURITY_COOKIE_SECURE: "false"
+      GF_SECURITY_COOKIE_SAMESITE: "lax"
 
     service:
       type: ClusterIP
