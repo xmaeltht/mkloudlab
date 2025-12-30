@@ -3,6 +3,7 @@
 *.tfstate
 *.tfstate.backup
 *.tfplan
+tfplan
 .terraform.lock.hcl
 
 # Secret variables files
@@ -34,6 +35,7 @@ troubleshoot/
 
 *.vagrant/
 .vagrant/
+.vagrant.backup*/
 debug-*.yaml
 *-debug.yaml
 
