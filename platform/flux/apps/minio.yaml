@@ -20,5 +20,3 @@ spec:
       namespace: minio
   dependsOn:
     - name: networking
-    - name: istio-config
-    - name: cert-manager
