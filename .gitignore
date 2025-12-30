@@ -2,6 +2,7 @@
 .terraform/
 *.tfstate
 *.tfstate.backup
+*.tfplan
 .terraform.lock.hcl
 
 # Secret variables files
