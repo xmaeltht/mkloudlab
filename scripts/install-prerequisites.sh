@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Prerequisites Installation Script
-# This script installs Gateway API, cert-manager, and Istio BEFORE Flux
+# This script installs Gateway API, local-path storage, metrics-server, and cert-manager BEFORE Flux
+# Note: Istio is now managed by Flux and will be installed via HelmRelease (platform/flux/apps/istio.yaml)
 
 set -e
 
@@ -252,44 +253,20 @@ EOF
     print_status "✅ Let's Encrypt DNS-01 ClusterIssuer created"
 fi
 
-
-# Step 7: Install Istio
-print_status "Step 7: Installing Istio..."
-
-# Download Istio
-ISTIO_VERSION="1.21.0"
-if [ ! -d "istio-${ISTIO_VERSION}" ]; then
-    print_status "Downloading Istio ${ISTIO_VERSION}..."
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=${ISTIO_VERSION} sh -
-fi
-
-# Add Istio to PATH
-export PATH=$PWD/istio-${ISTIO_VERSION}/bin:$PATH
-
-# Install Istio with Gateway API enabled
-print_status "Installing Istio with Gateway API support..."
-if kubectl get deployment istio-ingressgateway -n istio-system &> /dev/null; then
-    print_status "Istio already installed, skipping install"
+# Step 7: Create istio-system namespace
+# Note: Istio itself is now managed by Flux (platform/flux/apps/istio.yaml)
+# We only create the namespace here as a prerequisite
+print_status "Step 7: Creating istio-system namespace..."
+if kubectl get namespace istio-system &> /dev/null; then
+    print_status "istio-system namespace already exists, skipping creation"
 else
-    istioctl install --set values.pilot.env.EXTERNAL_ISTIOD=false --set values.global.istioNamespace=istio-system --set values.pilot.env.PILOT_ENABLE_GATEWAY_API=true -y
-    # Wait for Istio to be ready
-    print_status "Waiting for Istio to be ready..."
-    kubectl wait --for=condition=available --timeout=300s deployment/istiod -n istio-system
-    kubectl wait --for=condition=available --timeout=300s deployment/istio-ingressgateway -n istio-system
-    print_status "✅ Istio installed and ready"
+    kubectl create namespace istio-system
+    kubectl label namespace istio-system name=istio-system
+    print_status "✅ istio-system namespace created"
 fi
 
-# Step 8: Apply Istio Gateway API configuration
-print_status "Step 8: Applying Istio Gateway API configuration..."
-if kubectl get gatewayclass istio &> /dev/null; then
-    print_status "Istio Gateway API configuration already applied, skipping apply"
-else
-    kubectl apply -f platform/istio/istio.yaml
-    print_status "✅ Istio Gateway API configuration applied"
-fi
-
-# Step 9: Verify installation
-print_status "Step 9: Verifying installation..."
+# Step 8: Verify installation
+print_status "Step 8: Verifying installation..."
 
 echo ""
 print_status "Gateway API CRDs:"
@@ -317,10 +294,6 @@ print_status "cert-manager pods:"
 kubectl get pods -n cert-manager
 
 echo ""
-print_status "Istio pods:"
-kubectl get pods -n istio-system
-
-echo ""
 print_status "ClusterIssuers:"
 kubectl get clusterissuer
 
@@ -329,8 +302,15 @@ print_status "Cloudflare Secret (if created):"
 kubectl get secret cloudflare-api-token-secret -n cert-manager 2>/dev/null || echo "Cloudflare secret not created (CLOUDFLARE_API_TOKEN not set)"
 
 echo ""
-print_status "GatewayClass:"
-kubectl get gatewayclass
+print_status "istio-system namespace:"
+kubectl get namespace istio-system 2>/dev/null || echo "Namespace not found"
 
+echo ""
 print_status "🎉 Prerequisites installation completed successfully!"
-print_status "You can now proceed with Flux installation using: task install:flux"
+print_status ""
+print_status "Next steps:"
+print_status "  1. Install Flux: task install:flux"
+print_status "  2. Configure Flux GitRepository: task flux:configure-repo"
+print_status "  3. Install applications (including Istio): task install:apps"
+print_status ""
+print_status "Note: Istio is now managed by Flux and will be installed when you run 'task install:apps'"

@@ -37,7 +37,7 @@ tasks:
       - task: status
 
   install:prerequisites:
-    desc: Install prerequisites (Gateway API, local-path storage, metrics-server, cert-manager, Istio)
+    desc: "Install prerequisites (Gateway API, local-path storage, metrics-server, cert-manager). Note: Istio is now managed by Flux"
     cmds:
       - echo "Installing prerequisites..."
       - ./scripts/install-prerequisites.sh
@@ -509,16 +509,12 @@ tasks:
   # =============================================================================
 
   uninstall:prerequisites:
-    desc: Uninstall all prerequisites (Gateway API, local-path storage, metrics-server, cert-manager, Istio)
+    desc: "Uninstall all prerequisites (Gateway API, local-path storage, metrics-server, cert-manager). Note: Istio is managed by Flux"
     cmds:
       - echo "Uninstalling prerequisites..."
       - |
-        # Uninstall Istio
-        if kubectl get deployment istio-ingressgateway -n istio-system &> /dev/null; then
-          echo "Uninstalling Istio..."
-          istioctl uninstall --purge -y 2>/dev/null || true
-          kubectl delete namespace istio-system --ignore-not-found=true
-        fi
+        # Note: Istio is now managed by Flux, uninstall it via Flux if needed
+        # If you need to remove Istio, run: kubectl delete -f platform/flux/apps/istio.yaml
 
         # Uninstall cert-manager
         if kubectl get deployment cert-manager -n cert-manager &> /dev/null; then
