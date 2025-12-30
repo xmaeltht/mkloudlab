@@ -21,6 +21,10 @@ spec:
       storageClassName: local-path
       size: 2Gi
 
+    # Disable init container - newer Grafana versions handle permissions internally
+    initChownData:
+      enabled: false
+
     adminPassword: admin
 
     # Install required plugins explicitly
