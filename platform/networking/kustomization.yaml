@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - metallb/source.yaml
+  - metallb/helmrelease.yaml
+  - metallb/ipaddresspool.yaml
+  - external-dns/source.yaml
+  - external-dns/helmrelease.yaml
+  - tailscale/namespace.yaml
+  - tailscale/source.yaml
+  - tailscale/helmrelease.yaml
+  - tailscale/ingress-service.yaml
+  # Note: oauth-secret.yaml must be created manually with your Tailscale OAuth credentials

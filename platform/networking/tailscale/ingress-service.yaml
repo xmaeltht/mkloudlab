@@ -1,0 +1,29 @@
+# Tailscale Subnet Router with Host Network
+# This advertises the cluster's internal network to Tailscale,
+# allowing remote access to cluster services via their MetalLB LoadBalancer IPs
+#
+# IMPORTANT: The connector StatefulSet must be manually patched with hostNetwork: true
+# to access MetalLB IPs which are only available on the host network, not the pod network.
+#
+# ⚠️ NOTE: This patch is NOT persistent! If the StatefulSet is recreated (e.g., by deleting
+# and reapplying this Connector resource), you must reapply the patch.
+#
+# After applying this file, run:
+# STS_NAME=$(kubectl get statefulset -n tailscale -o jsonpath='{.items[0].metadata.name}')
+# kubectl patch statefulset $STS_NAME -n tailscale --type='json' \
+#   -p='[{"op": "add", "path": "/spec/template/spec/hostNetwork", "value": true},
+#        {"op": "add", "path": "/spec/template/spec/dnsPolicy", "value": "ClusterFirstWithHostNet"}]'
+---
+apiVersion: tailscale.com/v1alpha1
+kind: Connector
+metadata:
+  name: cluster-subnet-router
+  namespace: tailscale
+spec:
+  # Advertise the MetalLB IP pool to Tailscale network
+  subnetRouter:
+    advertiseRoutes:
+      - "172.16.16.0/24"  # MetalLB IP pool for LoadBalancer services
+
+  # Use the same hostname for consistency
+  hostname: mkloud-gateway

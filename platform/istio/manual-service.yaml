@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: main-gateway-istio
+  namespace: istio-system
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: "*.maelkloud.com"
+  labels:
+    istio.io/gateway-name: main-gateway
+spec:
+  type: LoadBalancer
+  selector:
+    istio.io/gateway-name: main-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: https
+      port: 443
+      targetPort: 443
+      protocol: TCP

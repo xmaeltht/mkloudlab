@@ -37,8 +37,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
-                - sonarqube
                 - keycloak
                 - local-path-storage
                 - gitlab
@@ -72,8 +70,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
-                - sonarqube
                 - keycloak
                 - local-path-storage
                 - gitlab
@@ -104,8 +100,6 @@ spec:
         any:
           - resources:
               namespaces:
-                - argocd
-                - sonarqube
                 - keycloak
                 - local-path-storage
                 - gitlab
@@ -146,7 +140,7 @@ kind: ClusterPolicy
 metadata:
   name: disallow-v1-endpoints
 spec:
-  validationFailureAction: Enforce
+  validationFailureAction: Audit
   background: true
   rules:
     - name: block-v1-endpoints

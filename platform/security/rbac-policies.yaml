@@ -1,48 +1,6 @@
 # Comprehensive RBAC Policies for Enhanced Security
 # Note: ArgoCD resources removed - using Flux for GitOps
----
-# Service Account for Monitoring operations
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: monitoring-reader
-  namespace: monitoring
-  labels:
-    app.kubernetes.io/name: monitoring
-    app.kubernetes.io/component: reader
----
-# Role for Monitoring (read-only)
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  namespace: monitoring
-  name: monitoring-reader-role
-rules:
-  - apiGroups: [""]
-    resources: ["pods", "services", "endpoints", "nodes"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["metrics.k8s.io"]
-    resources: ["nodes", "pods"]
-    verbs: ["get", "list"]
----
-# RoleBinding for Monitoring
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: monitoring-reader-binding
-  namespace: monitoring
-subjects:
-  - kind: ServiceAccount
-    name: monitoring-reader
-    namespace: monitoring
-roleRef:
-  kind: Role
-  name: monitoring-reader-role
-  apiGroup: rbac.authorization.k8s.io
----
+
 # Service Account for Security operations
 apiVersion: v1
 kind: ServiceAccount

@@ -1,11 +1,6 @@
-# Kustomization file for Grafana gateway and routing
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
-  - grafana-helmrelease.yaml
-  - grafana-gateway.yaml
-  - networkpolicy.yaml
-
-namespace: observability
-
+  - grafana-helm.yaml
+  - gateway.yaml
+  - certificate.yaml

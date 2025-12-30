@@ -10,7 +10,7 @@ This document outlines the security improvements implemented in the Mkloudlab Ku
 
 All namespaces now implement Pod Security Standards with appropriate enforcement levels:
 
-- **Restricted**: `keycloak`, `monitoring`, `observability`, `sonarqube`, `default`
+- **Restricted**: `keycloak`, `monitoring`, `observability`, `default`
 - **Baseline**: `argocd`, `kyverno`, `cert-manager`
 
 **Benefits**:

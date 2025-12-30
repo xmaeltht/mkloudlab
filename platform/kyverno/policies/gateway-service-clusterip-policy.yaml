@@ -1,0 +1,39 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: gateway-service-clusterip
+  annotations:
+    policies.kyverno.io/title: "Convert Gateway API LoadBalancer Services to ClusterIP"
+    policies.kyverno.io/category: "Best Practices"
+    policies.kyverno.io/severity: "medium"
+    policies.kyverno.io/subject: "Service"
+    policies.kyverno.io/description: >-
+      Automatically converts LoadBalancer services created by Istio Gateway API
+      to ClusterIP, except for the main-gateway service in istio-system namespace
+      which is allowed to remain as LoadBalancer for external access.
+spec:
+  rules:
+    - name: convert-gateway-loadbalancer-to-clusterip
+      match:
+        resources:
+          kinds:
+            - Service
+          selector:
+            matchLabels:
+              gateway.istio.io/managed: "istio.io-gateway-controller"
+      exclude:
+        resources:
+          namespaces:
+            - istio-system
+          names:
+            - main-gateway-istio
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.type }}"
+            operator: Equals
+            value: LoadBalancer
+      mutate:
+        patchStrategicMerge:
+          spec:
+            type: ClusterIP
+            externalIPs: null

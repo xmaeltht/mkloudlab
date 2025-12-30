@@ -27,12 +27,6 @@ output "oidc_client_secrets" {
 }
 
 # Individual OIDC client secrets
-output "argocd_oidc_client_secret" {
-  description = "The client secret for ArgoCD OIDC client"
-  value       = keycloak_openid_client.oidc_clients["argocd"].client_secret
-  sensitive   = true
-}
-
 output "grafana_oidc_client_secret" {
   description = "The client secret for Grafana OIDC client"
   value       = keycloak_openid_client.oidc_clients["grafana"].client_secret
@@ -43,11 +37,6 @@ output "prometheus_oidc_client_secret" {
   description = "The client secret for Prometheus OIDC client"
   value       = keycloak_openid_client.oidc_clients["prometheus"].client_secret
   sensitive   = true
-}
-
-output "sonarqube_saml_client_id" {
-  description = "The client ID for SonarQube SAML client"
-  value       = keycloak_saml_client.sonarqube.client_id
 }
 
 # Output admin group information
@@ -67,9 +56,6 @@ output "client_redirect_uris" {
   value = merge(
     {
       for k, v in local.oidc_clients : k => v.redirect_uris
-    },
-    {
-      "sonarqube" = keycloak_saml_client.sonarqube.valid_redirect_uris
     }
   )
 }

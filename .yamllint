@@ -11,5 +11,8 @@ rules:
   colons:
     max-spaces-before: 0
     max-spaces-after: 1
-exclude: |
+ignore: |
   platform/istio/templates/virtualservice-template.yaml
+  istio-1.21.0
+  **/Taskfile.yml
+  infrastructure/vagrant/

@@ -1,0 +1,75 @@
+# Flux HelmRelease for Prometheus (kube-prometheus-stack)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: prometheus
+  namespace: observability
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: 56.6.2
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+      interval: 1h
+  values:
+    grafana:
+      enabled: false
+
+    prometheus:
+      enabled: true
+      prometheusSpec:
+        fullnameOverride: prometheus-server
+        # Configure external URL for reverse proxy
+        externalUrl: "https://prometheus.maelkloud.com"
+        routePrefix: "/"
+        service:
+          port: 80
+          targetPort: 9090
+        # Increase probe timeouts to handle WAL replay on startup
+        # WAL replay can take several minutes with large amounts of data
+        livenessProbe:
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 10
+        readinessProbe:
+          timeoutSeconds: 10
+          periodSeconds: 10
+          failureThreshold: 120
+        startupProbe:
+          enabled: true
+          timeoutSeconds: 10
+          periodSeconds: 30
+          failureThreshold: 60  # 60 * 30s = 30 minutes max startup time
+        # Increase memory limits to handle WAL replay
+        # WAL replay can consume significant memory with large datasets
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 1000m  # Limited by namespace ResourceQuota (20 CPU total)
+            memory: 4Gi
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 50Gi
+
+    alertmanager:
+      enabled: true
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: local-path
+              resources:
+                requests:
+                  storage: 5Gi

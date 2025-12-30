@@ -1,0 +1,95 @@
+# Flux HelmRelease for Grafana
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: grafana
+      version: 7.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    persistence:
+      enabled: true
+      storageClassName: local-path
+      size: 2Gi
+
+    adminPassword: admin
+
+    # Install required plugins explicitly
+    plugins:
+      - grafana-piechart-panel
+      - grafana-clock-panel
+
+    # Configure Grafana to work behind reverse proxy
+    grafana.ini:
+      server:
+        domain: grafana.maelkloud.com
+        root_url: https://grafana.maelkloud.com
+        serve_from_sub_path: false
+        enable_gzip: true
+        protocol: http
+        http_addr: 0.0.0.0
+        http_port: 3000
+      # Security headers for proxy
+      security:
+        cookie_secure: true
+        cookie_samesite: lax
+      # Logging for debugging
+      log:
+        mode: console
+        level: info
+      auth.anonymous:
+        enabled: true
+        org_role: Viewer
+      # Datasource proxy settings
+      datasources:
+        timeout: 60
+        max_idle_conns: 100
+        max_idle_conns_per_host: 10
+
+    service:
+      type: ClusterIP
+      port: 80
+      targetPort: 3000
+
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://prometheus-server.observability.svc.cluster.local:80
+            access: proxy
+            isDefault: true
+            jsonData:
+              httpMethod: POST
+              timeInterval: 15s
+          - name: Loki
+            type: loki
+            url: http://loki.observability.svc.cluster.local:3100
+            access: proxy
+            jsonData:
+              maxLines: 1000
+          - name: Tempo
+            type: tempo
+            url: http://tempo.observability.svc.cluster.local:3200
+            access: proxy
+            jsonData:
+              httpMethod: GET
+              tracesToLogs:
+                datasourceUid: loki
+                tags: ['job', 'instance', 'pod', 'namespace']
+                mappedTags: [{ key: 'service.name', value: 'service' }]
+                mapTagNamesEnabled: false
+                spanStartTimeShift: '1h'
+                spanEndTimeShift: '1h'
+                filterByTraceID: false
+                filterBySpanID: false

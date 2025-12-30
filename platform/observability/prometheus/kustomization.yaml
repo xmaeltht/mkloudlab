@@ -1,8 +1,6 @@
-# Kustomization file for Prometheus gateway and routing
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
-  - networkpolicy.yaml
-
-namespace: observability
+  - prometheus-helm.yaml
+  - gateway.yaml
+  - certificate.yaml

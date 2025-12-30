@@ -274,7 +274,6 @@ task access
 # ArgoCD:    https://argocd.maelkloud.com
 # Grafana:   https://grafana.maelkloud.com
 # Keycloak:  https://keycloak.maelkloud.com
-# SonarQube: https://sonarqube.maelkloud.com
 ```
 
 ## Cleanup Operations

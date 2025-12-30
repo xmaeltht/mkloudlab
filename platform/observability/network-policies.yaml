@@ -1,0 +1,230 @@
+# Network Policies for Observability Services - Allow Main Gateway Access
+# These policies allow the main gateway in istio-system to access observability services
+
+---
+# Allow ingress to Grafana from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-grafana-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from Istio Gateway (main gateway in istio-system)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Allow from local namespace gateway (for backward compatibility)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: grafana-gateway
+      ports:
+        - protocol: TCP
+          port: 3000
+    # Allow from same namespace (for health checks)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3000
+
+---
+# Allow ingress to Prometheus from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from Istio Gateway (main gateway in istio-system)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 9090
+        - protocol: TCP
+          port: 8080
+    # Allow from local namespace gateway (for backward compatibility)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: prometheus-gateway
+      ports:
+        - protocol: TCP
+          port: 9090
+    # Allow from same namespace (for scraping)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 9090
+
+---
+# Allow ingress to Loki from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-loki-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from Istio Gateway (main gateway in istio-system)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Allow from local namespace gateway (for backward compatibility)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: loki-gateway
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Allow from same namespace (for log ingestion)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3100
+  egress:
+    # Allow egress to same namespace (for internal communication)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+      ports:
+        - protocol: TCP
+          port: 3100
+    # Allow HTTPS egress for external connections (usage reporting, etc.)
+    - to: []
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+    # Allow DNS
+    - to: []
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# Allow ingress to Tempo from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tempo-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: tempo
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from Istio Gateway (main gateway in istio-system)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 3200
+    # Allow from local namespace gateway (for backward compatibility)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: observability
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: tempo-gateway
+      ports:
+        - protocol: TCP
+          port: 3200
+    # Allow from same namespace (for trace ingestion)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 3200
+
+---
+# Allow ingress to Alloy from Istio Gateway
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-alloy-ingress
+  namespace: observability
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana-alloy
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from Istio Gateway (main gateway in istio-system)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: istio-system
+          podSelector:
+            matchLabels:
+              istio.io/gateway-name: main-gateway
+      ports:
+        - protocol: TCP
+          port: 12345
+    # Allow from same namespace (for metrics scraping)
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 12345

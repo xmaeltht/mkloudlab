@@ -1,0 +1,147 @@
+# Flux HelmRelease for Keycloak (Codecentric KeycloakX Helm Chart)
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: keycloakx
+      version: 2.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: codecentric
+        namespace: flux-system
+      interval: 1h
+  targetNamespace: keycloak
+  install:
+    createNamespace: true
+  values:
+    # Admin Credentials - Using External Secrets
+    existingSecret: "keycloak-admin"
+    existingSecretKey: "password"
+
+    # Service Configuration
+    service:
+      type: ClusterIP
+      port: 8080
+
+    # Ingress Configuration (using Gateway API separately)
+    ingress:
+      enabled: false
+
+    # Database Configuration
+    # Note: Codecentric chart expects external database or separate PostgreSQL deployment
+    # Configure environment variables for database connection
+    # Using YAML literal block scalar format (the chart expects a string that will be parsed as YAML)
+    extraEnv: |
+      - name: KC_DB
+        value: postgres
+      - name: KC_DB_URL_HOST
+        value: keycloak-postgresql
+      - name: KC_DB_URL_DATABASE
+        value: keycloak
+      - name: KC_DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-user
+      - name: KC_DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: keycloak-postgresql
+            key: postgres-password
+      - name: KC_PROXY
+        value: edge
+      - name: KC_HTTP_ENABLED
+        value: "true"
+      - name: KC_HOSTNAME
+        value: "keycloak.maelkloud.com"
+      - name: KC_HOSTNAME_URL
+        value: "https://keycloak.maelkloud.com"
+      - name: KC_HOSTNAME_ADMIN_URL
+        value: "https://keycloak.maelkloud.com"
+      - name: KC_HOSTNAME_STRICT
+        value: "false"
+      - name: KC_HOSTNAME_STRICT_BACKCHANNEL
+        value: "false"
+      - name: KC_PROXY_HEADERS
+        value: "xforwarded"
+      - name: KC_HOSTNAME_STRICT_HTTPS
+        value: "false"
+
+    # Cache Configuration - Use local cache to avoid clustering/JGroups issues
+    # This automatically adds --cache=local to the command
+    cache:
+      stack: local
+
+    # HTTP Configuration
+    http:
+      relativePath: "/"
+
+    # Production Mode
+    command:
+      - "/opt/keycloak/bin/kc.sh"
+      - "start"
+      - "--cache=local"
+      - "--proxy-headers=xforwarded"
+
+    # Security Context - Pod Level
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      fsGroup: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Security Context - Container Level
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: false
+      seccompProfile:
+        type: RuntimeDefault
+
+    # Resource Limits
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1024Mi
+      limits:
+        cpu: 2000m
+        memory: 2048Mi
+
+    # Health probes - Using management port 9000
+    livenessProbe: |
+      httpGet:
+        path: /health/live
+        port: 9000
+      initialDelaySeconds: 120
+      timeoutSeconds: 5
+      periodSeconds: 30
+      failureThreshold: 3
+
+    readinessProbe: |
+      httpGet:
+        path: /health/ready
+        port: 9000
+      initialDelaySeconds: 30
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 6
+
+    startupProbe: |
+      httpGet:
+        path: /health/started
+        port: 9000
+      initialDelaySeconds: 10
+      timeoutSeconds: 5
+      periodSeconds: 10
+      failureThreshold: 30

@@ -55,10 +55,10 @@ Replace `YOUR_CLOUDFLARE_API_TOKEN` with your actual Cloudflare API token.
 
 ### 3. Apply the ClusterIssuer and Certificate
 
-Once Cert-Manager is running and the secret is in place, you can apply the `cert-manager.yaml` manifest. This will create a `ClusterIssuer` to issue certificates using Let's Encrypt.
+Once Cert-Manager is running and the secret is in place, you can apply the `cluster-issuer.yaml` manifest. This will create a `ClusterIssuer` to issue certificates using Let's Encrypt.
 
 ```bash
-kubectl apply -f cert-manager.yaml
+kubectl apply -f cluster-issuer.yaml
 ```
 
 The `ClusterIssuer` is now ready to issue certificates for any service in your cluster. You can create `Certificate` resources for your services as needed.

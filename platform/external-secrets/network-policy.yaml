@@ -1,0 +1,25 @@
+# Network Policy for External Secrets Operator
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: external-secrets-webhook
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: external-secrets-webhook
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow webhook calls from Kubernetes API server
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 10250
+        - protocol: TCP
+          port: 443
+  egress:
+    # Allow all egress for webhook to function
+    - {}

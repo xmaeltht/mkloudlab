@@ -19,7 +19,6 @@
 
 2. **Application Layer**
    - keycloak
-   - sonarqube
    - monitoring (Prometheus & Grafana)
    - alloy (Grafana Alloy OTLP collector)
    - tempo (Grafana Tempo traces)
