@@ -7,15 +7,15 @@ metadata:
   namespace: keycloak
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-keycloak
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https-keycloak
   hostnames:
-  - keycloak.maelkloud.com
+    - keycloak.maelkloud.com
   rules:
-  - backendRefs:
-    - name: keycloak-keycloak-keycloakx-http
-      port: 80
+    - backendRefs:
+        - name: keycloak-keycloak-keycloakx-http
+          port: 80
 ---
 # HTTPRoute for Grafana
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -25,15 +25,15 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-grafana
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https-grafana
   hostnames:
-  - grafana.maelkloud.com
+    - grafana.maelkloud.com
   rules:
-  - backendRefs:
-    - name: grafana
-      port: 80
+    - backendRefs:
+        - name: grafana
+          port: 80
 ---
 # HTTPRoute for Prometheus
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -43,15 +43,15 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-prometheus
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https-prometheus
   hostnames:
-  - prometheus.maelkloud.com
+    - prometheus.maelkloud.com
   rules:
-  - backendRefs:
-    - name: prometheus-server
-      port: 80
+    - backendRefs:
+        - name: prometheus-server
+          port: 80
 ---
 # HTTPRoute for Loki
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -61,15 +61,15 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-loki
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https-loki
   hostnames:
-  - loki.maelkloud.com
+    - loki.maelkloud.com
   rules:
-  - backendRefs:
-    - name: loki
-      port: 3100
+    - backendRefs:
+        - name: loki
+          port: 3100
 ---
 # HTTPRoute for Tempo
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -79,12 +79,12 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-tempo
+    - name: main-gateway
+      namespace: istio-system
+      sectionName: https-tempo
   hostnames:
-  - tempo.maelkloud.com
+    - tempo.maelkloud.com
   rules:
-  - backendRefs:
-    - name: tempo
-      port: 3200
+    - backendRefs:
+        - name: tempo
+          port: 3200
