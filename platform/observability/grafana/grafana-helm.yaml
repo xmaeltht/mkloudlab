@@ -69,6 +69,7 @@ spec:
             url: http://prometheus-server.observability.svc.cluster.local:80
             access: proxy
             isDefault: true
+            uid: prometheus
             jsonData:
               httpMethod: POST
               timeInterval: 15s
@@ -76,12 +77,14 @@ spec:
             type: loki
             url: http://loki.observability.svc.cluster.local:3100
             access: proxy
+            uid: loki
             jsonData:
               maxLines: 1000
           - name: Tempo
             type: tempo
-            url: http://tempo.observability.svc.cluster.local:3200
+            url: http://tempo.observability.svc.cluster.local:3100
             access: proxy
+            uid: tempo
             jsonData:
               httpMethod: GET
               tracesToLogs:
@@ -93,3 +96,13 @@ spec:
                 spanEndTimeShift: '1h'
                 filterByTraceID: false
                 filterBySpanID: false
+              tracesToMetrics:
+                datasourceUid: prometheus
+              serviceMap:
+                datasourceUid: prometheus
+              nodeGraph:
+                enabled: true
+              search:
+                hide: false
+              lokiSearch:
+                datasourceUid: loki
