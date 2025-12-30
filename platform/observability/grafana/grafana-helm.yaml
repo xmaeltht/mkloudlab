@@ -45,11 +45,19 @@ spec:
       # Security headers for proxy
       security:
         cookie_secure: false
-        cookie_samesite: lax
+        cookie_samesite: none
+        allow_embedding: false
+      # Session configuration
+      session:
+        cookie_secure: false
+        cookie_samesite: none
       # Logging for debugging
       log:
         mode: console
         level: info
+      auth:
+        disable_login_form: false
+        disable_signout_menu: false
       auth.anonymous:
         enabled: false
       # Datasource proxy settings
