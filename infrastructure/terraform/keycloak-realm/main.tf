@@ -50,9 +50,9 @@ resource "keycloak_group" "admin_group" {
 
 locals {
   oidc_clients = {
-    argocd = {
-      name = "ArgoCD"
-      redirect_uris = ["https://argocd.maelkloud.com/*", "https://argocd.maelkloud.com"]
+    alloy = {
+      name = "Alloy"
+      redirect_uris = ["https://alloy.maelkloud.com/*", "https://alloy.maelkloud.com"]
     },
     grafana = {
       name = "Grafana"
@@ -83,7 +83,7 @@ resource "keycloak_openid_client" "oidc_clients" {
 
   valid_redirect_uris = each.value.redirect_uris
   base_url           = "https://${each.key}.maelkloud.com"
-  web_origins        = each.value.web_origins
+  web_origins        = try(each.value.web_origins, [])
 }
 
 resource "keycloak_role" "client_roles" {
