@@ -1,0 +1,54 @@
+# Simple MinIO Tenant
+apiVersion: minio.min.io/v2
+kind: Tenant
+metadata:
+  name: minio
+  namespace: minio
+spec:
+  # Number of MinIO servers
+  pools:
+    - servers: 1
+      name: pool-0
+      volumesPerServer: 4
+      volumeClaimTemplate:
+        metadata:
+          name: data
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi  # 4x10Gi = 40Gi total
+          storageClassName: local-path
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 1000m
+          memory: 2Gi
+
+  # Enable console
+  features:
+    enableSFTP: false
+    bucketDNS: false
+
+  # Configure services
+  exposeServices:
+    console: true
+    minio: true
+
+  # Credentials (for testing, use secrets in production)
+  configuration:
+    name: minio-env-configuration
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-env-configuration
+  namespace: minio
+type: Opaque
+stringData:
+  config.env: |-
+    export MINIO_ROOT_USER="admin"
+    export MINIO_ROOT_PASSWORD="minio123"
