@@ -6,10 +6,10 @@ ENV['VAGRANT_NO_PARALLEL']  = 'yes'
 
 VAGRANT_BOX         = "bento/ubuntu-24.04"
 VAGRANT_BOX_VERSION = "202502.21.0"
-CPUS_MASTER_NODE    = 8
-CPUS_WORKER_NODE    = 8
-MEMORY_MASTER_NODE  = 8192
-MEMORY_WORKER_NODE  = 8192
+CPUS_MASTER_NODE    = 10
+CPUS_WORKER_NODE    = 10
+MEMORY_MASTER_NODE  = 16384
+MEMORY_WORKER_NODE  = 16384
 WORKER_NODES_COUNT  = (ENV['WORKER_COUNT'] || 3).to_i
 NETWORK_PREFIX      = "172.16.16"
 
@@ -35,6 +35,10 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
       v.name    = "kcontroller"
       v.memory  = MEMORY_MASTER_NODE
       v.cpus    = CPUS_MASTER_NODE
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+      v.customize ["modifyvm", :id, "--ioapic", "on"]
+      v.customize ["storagectl", :id, "--name", "SATA Controller", "--hostiocache", "on"]
     end
 
     node.vm.provider :libvirt do |v|
@@ -60,6 +64,10 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
         v.name    = "knode#{i}"
         v.memory  = MEMORY_WORKER_NODE
         v.cpus    = CPUS_WORKER_NODE
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+        v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
+        v.customize ["modifyvm", :id, "--ioapic", "on"]
+        v.customize ["storagectl", :id, "--name", "SATA Controller", "--hostiocache", "on"]
       end
 
       node.vm.provider :libvirt do |v|

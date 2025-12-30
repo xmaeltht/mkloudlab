@@ -38,14 +38,12 @@ This repository has been migrated from ArgoCD to Flux. All ArgoCD Application ma
 ### Helm Releases
 - `cert-manager.yaml` - Cert-Manager Helm chart
 - `external-secrets.yaml` - External Secrets Operator
-- `sonarqube.yaml` - SonarQube Helm chart
 - `loki-stack.yaml` - Loki Stack Helm chart
 - `kyverno.yaml` - Kyverno policy engine
 
 ### Kustomizations
 - `keycloak.yaml` - Keycloak deployment
 - `keycloak-gateway.yaml` - Keycloak Gateway API resources
-- `sonarqube-gateway.yaml` - SonarQube Gateway API resources
 - `monitoring.yaml` - Prometheus & Grafana
 - `alloy.yaml` - Grafana Alloy collector
 - `tempo.yaml` - Grafana Tempo tracing
@@ -134,4 +132,3 @@ After confirming Flux is working:
    ```bash
    kubectl delete crd applications.argoproj.io applicationsets.argoproj.io appprojects.argoproj.io
    ```
-

@@ -1,6 +1,6 @@
-# Security Hardening Guide for Keycloak and SonarQube
+# Security Hardening Guide for Keycloak
 
-This document outlines the security measures implemented for production deployments of Keycloak and SonarQube.
+This document outlines the security measures implemented for production deployments of Keycloak.
 
 ## 🔒 Security Overview
 
@@ -46,35 +46,7 @@ This document outlines the security measures implemented for production deployme
 - [x] **Encryption at Rest**: Depends on storage class encryption
 - [x] **Encryption in Transit**: TLS for external connections
 
-### ✅ SonarQube Security Measures
-
-#### Application Security
-- [x] **Strong Admin Password**: Change default password
-- [x] **Monitoring Passcode**: Unique monitoring passcode
-- [x] **HTTPS Only**: Via Istio Gateway
-- [x] **Security Context**: Restricted pod security standards
-- [x] **Plugin Security**: Only install trusted plugins
-
-#### Container Security
-- [x] **Run as Non-Root**: UID 1000
-- [x] **No Privilege Escalation**: Explicitly disabled
-- [x] **Drop All Capabilities**: All capabilities dropped
-- [x] **Seccomp Profile**: RuntimeDefault
-- [x] **Resource Limits**: Enforced CPU and memory limits
-- [x] **fsGroup**: Set to 0 for file permissions
-
-#### Network Security
-- [x] **Network Policies**: Zero-trust network segmentation
-- [x] **ClusterIP Service**: Internal only
-- [x] **TLS Termination**: Via Istio Gateway
-- [x] **Database Isolation**: PostgreSQL only accessible from SonarQube
-
-#### Data Security
-- [x] **Database Credentials**: Stored in Kubernetes secrets
-- [x] **Persistent Storage**: 20Gi with local-path (TODO: encrypted storage)
-- [x] **Backup Strategy**: Document backup procedures
-
-### ✅ PostgreSQL Security (Both Services)
+### ✅ PostgreSQL Security (Keycloak)
 
 #### Container Security
 - [x] **Run as Non-Root**: UID 999 (postgres user)
@@ -107,8 +79,7 @@ This document outlines the security measures implemented for production deployme
 1. **Change All Default Passwords**
    ```bash
    # Keycloak admin password
-   # SonarQube admin password
-   # PostgreSQL passwords for both services
+   # PostgreSQL passwords for Keycloak
    ```
 
 2. **Implement External Secrets Management**
@@ -132,7 +103,6 @@ This document outlines the security measures implemented for production deployme
 5. **Enable Audit Logging**
    ```yaml
    # Keycloak: Configure event listeners
-   # SonarQube: Enable audit logs
    ```
 
 ### Recommended Actions
@@ -155,7 +125,6 @@ This document outlines the security measures implemented for production deployme
    ```bash
    # Automated backups for PostgreSQL databases
    # Backup Keycloak realm configurations
-   # Backup SonarQube analysis data
    ```
 
 9. **Enable High Availability**
@@ -187,24 +156,10 @@ This document outlines the security measures implemented for production deployme
 - PostgreSQL (port 5432)
 - HTTPS (port 443) - for OIDC, SAML, federation
 
-### SonarQube Network Policies
-
-**Default Deny All**
-- Blocks all ingress and egress by default
-
-**Allowed Ingress**
-- Istio Gateway (port 9000)
-- Same namespace (health checks)
-
-**Allowed Egress**
-- DNS (kube-system, UDP 53)
-- PostgreSQL (port 5432)
-- HTTPS (port 443) - for plugin downloads
-
 ### PostgreSQL Network Policies
 
 **Ingress**
-- Only from application pods (Keycloak or SonarQube)
+- Only from application pods (Keycloak)
 - Port 5432 only
 
 **Egress**
@@ -218,9 +173,7 @@ Secrets are stored as Kubernetes Secret resources with base64 encoding.
 
 **Files containing secrets:**
 - `platform/identity/keycloak/postgresql.yaml` - lines 8-11
-- `platform/devtools/sonarqube/postgresql.yaml` - lines 11-14
 - `platform/identity/keycloak/keycloak-helm.yaml` - line 24, 48-49
-- `platform/devtools/sonarqube/sonarqube-helm.yaml` - lines 28, 32-33, 83
 
 ### Production Recommendations
 
@@ -351,7 +304,6 @@ kubeseal --format yaml < secret.yaml > sealed-secret.yaml
 ## 🔗 References
 
 - [Keycloak Security Guide](https://www.keycloak.org/docs/latest/server_admin/#_hardening)
-- [SonarQube Security](https://docs.sonarqube.org/latest/instance-administration/security/)
 - [Kubernetes Security Best Practices](https://kubernetes.io/docs/concepts/security/)
 - [CIS Kubernetes Benchmark](https://www.cisecurity.org/benchmark/kubernetes)
 - [OWASP Kubernetes Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Kubernetes_Security_Cheat_Sheet.html)

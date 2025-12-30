@@ -129,9 +129,6 @@ spec:
               name: keycloak
         - namespaceSelector:
             matchLabels:
-              name: sonarqube
-        - namespaceSelector:
-            matchLabels:
               name: flux-system
         - namespaceSelector:
             matchLabels:

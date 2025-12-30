@@ -49,7 +49,7 @@ if grep -q "172.16.16.150.*maelkloud.com" /etc/hosts 2>/dev/null; then
     grep "172.16.16.150.*maelkloud.com" /etc/hosts
 else
     echo -e "${RED}✗${NC} /etc/hosts missing entries!"
-    echo "   Run: echo '172.16.16.150  keycloak.maelkloud.com sonarqube.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com' | sudo tee -a /etc/hosts"
+    echo "   Run: echo '172.16.16.150  keycloak.maelkloud.com grafana.maelkloud.com prometheus.maelkloud.com loki.maelkloud.com tempo.maelkloud.com alloy.maelkloud.com' | sudo tee -a /etc/hosts"
 fi
 echo ""
 
@@ -154,4 +154,3 @@ echo "2. Check subnet route is approved in Tailscale admin"
 echo "3. Try accessing via IP: curl -k https://172.16.16.150 -H 'Host: grafana.maelkloud.com'"
 echo "4. Check browser console for errors (F12 → Console)"
 echo "5. Verify certificates are valid: kubectl get certificates -A"
-

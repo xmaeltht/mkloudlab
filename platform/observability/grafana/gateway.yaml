@@ -9,15 +9,15 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-  - name: https
-    protocol: HTTPS
-    port: 443
-    hostname: grafana.maelkloud.com
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - name: grafana-cert
-        kind: Secret
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: grafana.maelkloud.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: grafana-cert
+            kind: Secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -26,12 +26,11 @@ metadata:
   namespace: observability
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
-    sectionName: https-grafana
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
-  - grafana.maelkloud.com
+    - grafana.maelkloud.com
   rules:
-  - backendRefs:
-    - name: grafana
-      port: 80
+    - backendRefs:
+        - name: grafana
+          port: 80

@@ -12,4 +12,3 @@ spec:
   issuerRef:
     name: letsencrypt-dns-cloudflare
     kind: ClusterIssuer
-

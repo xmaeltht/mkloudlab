@@ -14,7 +14,7 @@ This document summarizes the changes made to enable domain-based access to all s
 
 2. **`platform/istio/httproutes.yaml`**
    - HTTPRoute resources for all services pointing to main gateway
-   - Services: keycloak, sonarqube, grafana, prometheus, loki, tempo, alloy
+   - Services: keycloak, grafana, prometheus, loki, tempo, alloy
 
 3. **`platform/observability/alloy/certificate.yaml`**
    - TLS certificate for alloy service
@@ -55,7 +55,6 @@ Backend Services
 | Service | Domain | Namespace | Backend Service | Port |
 |---------|--------|-----------|-----------------|------|
 | Keycloak | keycloak.maelkloud.com | keycloak | keycloak-keycloak-keycloakx-http | 80 |
-| SonarQube | sonarqube.maelkloud.com | sonarqube | sonarqube-sonarqube-sonarqube | 9000 |
 | Grafana | grafana.maelkloud.com | observability | grafana | 80 |
 | Prometheus | prometheus.maelkloud.com | observability | prometheus-server | 80 |
 | Loki | loki.maelkloud.com | observability | loki | 3100 |
@@ -183,7 +182,7 @@ Backend Services
 
 ## Notes
 
-- Individual service gateways (keycloak-gateway, sonarqube-gateway, etc.) remain as ClusterIP and won't interfere
+- Individual service gateways (keycloak-gateway, etc.) remain as ClusterIP and won't interfere
 - The main gateway is the only LoadBalancer service (enforced by Kyverno policy)
 - All TLS certificates are managed by cert-manager with automatic renewal
 - DNS records are managed automatically by external-dns
@@ -195,4 +194,3 @@ Backend Services
 - Verification script: `scripts/verify-domain-access.sh`
 - Main gateway: `platform/istio/main-gateway.yaml`
 - HTTPRoutes: `platform/istio/httproutes.yaml`
-

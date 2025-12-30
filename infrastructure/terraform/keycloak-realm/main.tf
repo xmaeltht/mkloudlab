@@ -60,10 +60,6 @@ resource "keycloak_group" "admin_group" {
 
 locals {
   oidc_clients = {
-    argocd = {
-      name          = "ArgoCD"
-      redirect_uris = ["https://argocd.maelkloud.com/*", "https://argocd.maelkloud.com"]
-    },
     grafana = {
       name          = "Grafana"
       redirect_uris = ["https://grafana.maelkloud.com/login/generic_oauth"]
@@ -152,86 +148,6 @@ resource "keycloak_generic_protocol_mapper" "oidc_groups_mapper" {
     "id.token.claim"       = "true"
     "access.token.claim"   = "true"
     "userinfo.token.claim" = "true"
-    "full.path"            = "false"
-  }
-}
-
-# SAML client for SonarQube
-resource "keycloak_saml_client" "sonarqube" {
-  realm_id  = local.realm_id
-  client_id = "sonarqube"
-  name      = "SonarQube"
-  enabled   = true
-
-  sign_documents            = true
-  sign_assertions           = false
-  encrypt_assertions        = false
-  client_signature_required = false
-  force_post_binding        = true
-  front_channel_logout      = true
-
-  valid_redirect_uris = [
-    "https://sonarqube.maelkloud.com/oauth2/callback/saml"
-  ]
-  base_url = "https://sonarqube.maelkloud.com"
-
-  name_id_format = "email"
-}
-
-resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_login" {
-  realm_id                   = local.realm_id
-  client_id                  = keycloak_saml_client.sonarqube.id
-  name                       = "Login"
-  user_property              = "Username"
-  friendly_name              = "Login"
-  saml_attribute_name        = "login"
-  saml_attribute_name_format = "Basic"
-}
-
-resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_email" {
-  depends_on                 = [keycloak_saml_client.sonarqube]
-  realm_id                   = local.realm_id
-  client_id                  = keycloak_saml_client.sonarqube.id
-  name                       = "Email"
-  user_property              = "Email"
-  friendly_name              = "email"
-  saml_attribute_name        = "email"
-  saml_attribute_name_format = "Basic"
-}
-
-resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_username" {
-  depends_on                 = [keycloak_saml_client.sonarqube]
-  realm_id                   = local.realm_id
-  client_id                  = keycloak_saml_client.sonarqube.id
-  name                       = "Username"
-  user_property              = "Username"
-  friendly_name              = "username"
-  saml_attribute_name        = "username"
-  saml_attribute_name_format = "Basic"
-}
-
-resource "keycloak_saml_user_property_protocol_mapper" "sonarqube_name" {
-  depends_on                 = [keycloak_saml_client.sonarqube]
-  realm_id                   = local.realm_id
-  client_id                  = keycloak_saml_client.sonarqube.id
-  name                       = "Name"
-  user_property              = "Username"
-  friendly_name              = "name"
-  saml_attribute_name        = "name"
-  saml_attribute_name_format = "Basic"
-}
-
-resource "keycloak_generic_protocol_mapper" "sonarqube_groups" {
-  depends_on      = [keycloak_saml_client.sonarqube]
-  realm_id        = local.realm_id
-  client_id       = keycloak_saml_client.sonarqube.id
-  name            = "Groups"
-  protocol        = "saml"
-  protocol_mapper = "saml-group-membership-mapper"
-
-  config = {
-    "attribute.name"       = "groups"
-    "attribute.nameformat" = "Basic"
     "full.path"            = "false"
   }
 }

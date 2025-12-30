@@ -20,7 +20,7 @@ metrics, logs, and traces from the cluster.
 ## Operations
 
 - Configuration changes are managed by editing `config/alloy.river`.
-- Apply with ArgoCD (`platform/argocd/apps/alloy-app.yaml`) or manually via `kubectl apply -k platform/observability/alloy`.
+- Managed by Flux via `platform/flux/apps/alloy.yaml` or apply manually via `kubectl apply -k platform/observability/alloy`.
 - Review Alloy health from the `/ -/ready` probe on port 12345 exposed inside the pod.
 - Metrics scraped from Alloy itself are available on `/metrics` (port 12345) and picked up by Prometheus via ServiceMonitors.
 

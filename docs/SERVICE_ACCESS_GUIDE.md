@@ -14,7 +14,6 @@ All services use HTTPS with valid Let's Encrypt certificates. Always use `https:
 |---------|-----|-------------|
 | **Grafana** | https://grafana.maelkloud.com | Observability dashboards |
 | **Keycloak** | https://keycloak.maelkloud.com | Identity management |
-| **SonarQube** | https://sonarqube.maelkloud.com | Code quality analysis |
 | **Prometheus** | https://prometheus.maelkloud.com | Metrics & monitoring |
 | **Alloy** | https://alloy.maelkloud.com | Telemetry collector |
 
@@ -111,10 +110,6 @@ Use them through Grafana instead.
    - Configure authentication
    - Manage user access
 
-3. **Code Quality:** https://sonarqube.maelkloud.com
-   - Review code analysis
-   - Check security vulnerabilities
-
 ---
 
 ## 💡 Pro Tips
@@ -133,7 +128,6 @@ Copy these to your browser:
 ```
 https://grafana.maelkloud.com
 https://keycloak.maelkloud.com
-https://sonarqube.maelkloud.com
 https://prometheus.maelkloud.com
 https://alloy.maelkloud.com
 ```

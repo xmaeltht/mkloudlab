@@ -33,6 +33,8 @@ troubleshoot/
 
 *.vagrant/
 .vagrant/
+debug-*.yaml
+*-debug.yaml
 
 # Kubernetes secrets and sensitive files
 *-secret.yaml
@@ -61,4 +63,5 @@ kubeconfig
 
 # Helm values with secrets (use *-values-secret.yaml pattern)
 *-values-secret.yaml
-*-secret-values.yamlplatform/networking/tailscale/oauth-secret.yaml
+*-secret-values.yaml
+platform/networking/tailscale/oauth-secret.yaml

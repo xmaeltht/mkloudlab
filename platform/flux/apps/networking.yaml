@@ -11,6 +11,7 @@ spec:
     kind: GitRepository
     name: mkloudlab
     namespace: flux-system
-  dependsOn:
-    - name: kyverno
-    - name: external-secrets
+  # Dependencies commented out - kustomizations are named differently in cluster
+  # dependsOn:
+  #   - name: kyverno
+  #   - name: external-secrets

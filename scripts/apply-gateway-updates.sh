@@ -18,7 +18,6 @@ NC='\033[0m'
 # List of gateway files to apply
 GATEWAY_FILES=(
     "platform/identity/keycloak/gateway.yaml"
-    "platform/devtools/sonarqube/gateway.yaml"
     "platform/observability/grafana/gateway.yaml"
     "platform/observability/prometheus/gateway.yaml"
     "platform/observability/loki/gateway.yaml"
@@ -50,7 +49,6 @@ echo ""
 # Verify HTTPRoutes point to main-gateway
 SERVICES=(
     "keycloak:keycloak"
-    "sonarqube:sonarqube"
     "grafana:observability"
     "prometheus:observability"
     "loki:observability"
@@ -88,4 +86,3 @@ else
     echo "Please check the output above and re-run this script if needed"
     exit 1
 fi
-

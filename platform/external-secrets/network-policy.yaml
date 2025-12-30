@@ -9,17 +9,17 @@ spec:
     matchLabels:
       app.kubernetes.io/name: external-secrets-webhook
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  # Allow webhook calls from Kubernetes API server
-  - from:
-    - namespaceSelector: {}
-    ports:
-    - protocol: TCP
-      port: 10250
-    - protocol: TCP
-      port: 443
+    # Allow webhook calls from Kubernetes API server
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - protocol: TCP
+          port: 10250
+        - protocol: TCP
+          port: 443
   egress:
-  # Allow all egress for webhook to function
-  - {}
+    # Allow all egress for webhook to function
+    - {}

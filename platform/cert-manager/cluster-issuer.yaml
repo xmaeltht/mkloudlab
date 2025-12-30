@@ -18,5 +18,4 @@ spec:
 # Note: Certificate resources for specific services should be created
 # in their respective namespaces as needed. Examples:
 # - Keycloak: services/keycloak/keycloak-cert.yaml
-# - SonarQube: services/sonarqube/sonar-cert.yaml
 # - Prometheus/Grafana: platform/observability/prometheus-grafana/certificates.yaml

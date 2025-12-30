@@ -61,9 +61,15 @@ spec:
         value: "keycloak.maelkloud.com"
       - name: KC_HOSTNAME_URL
         value: "https://keycloak.maelkloud.com"
+      - name: KC_HOSTNAME_ADMIN_URL
+        value: "https://keycloak.maelkloud.com"
       - name: KC_HOSTNAME_STRICT
-        value: "true"
+        value: "false"
       - name: KC_HOSTNAME_STRICT_BACKCHANNEL
+        value: "false"
+      - name: KC_PROXY_HEADERS
+        value: "xforwarded"
+      - name: KC_HOSTNAME_STRICT_HTTPS
         value: "false"
 
     # Cache Configuration - Use local cache to avoid clustering/JGroups issues
@@ -77,10 +83,10 @@ spec:
 
     # Production Mode
     command:
-    - "/opt/keycloak/bin/kc.sh"
-    - "start"
-    - "--cache=local"
-    - "--proxy-headers=xforwarded"
+      - "/opt/keycloak/bin/kc.sh"
+      - "start"
+      - "--cache=local"
+      - "--proxy-headers=xforwarded"
 
     # Security Context - Pod Level
     securityContext:
@@ -98,7 +104,7 @@ spec:
       runAsUser: 1000
       capabilities:
         drop:
-        - ALL
+          - ALL
       readOnlyRootFilesystem: false
       seccompProfile:
         type: RuntimeDefault

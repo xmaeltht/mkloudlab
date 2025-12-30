@@ -19,7 +19,6 @@ All applications in `platform/argocd/apps/` have been converted to Flux resource
 |-------------------|---------------|------|
 | cert-manager-app.yaml | cert-manager.yaml | HelmRelease |
 | external-secrets-app.yaml | external-secrets.yaml | HelmRelease |
-| sonarqube-app.yaml | sonarqube.yaml | HelmRelease |
 | prometheus-app.yaml | prometheus.yaml | HelmRelease |
 | grafana-app.yaml | grafana.yaml | HelmRelease |
 | loki-app.yaml | loki.yaml | HelmRelease |
@@ -152,4 +151,3 @@ If you need to rollback to ArgoCD:
 1. Reinstall ArgoCD: `task install:argocd`
 2. Re-apply ArgoCD applications from `platform/argocd/apps/`
 3. Remove Flux: `kubectl delete namespace flux-system`
-

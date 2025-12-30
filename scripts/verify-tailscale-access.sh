@@ -15,7 +15,6 @@ METALLB_IP="172.16.16.150"
 KCONTROLLER_IP="172.16.16.100"
 SERVICES=(
   "keycloak.maelkloud.com"
-  "sonarqube.maelkloud.com"
   "grafana.maelkloud.com"
   "prometheus.maelkloud.com"
   "loki.maelkloud.com"
