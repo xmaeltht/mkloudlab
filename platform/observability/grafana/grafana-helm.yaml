@@ -44,15 +44,14 @@ spec:
         http_port: 3000
       # Security headers for proxy
       security:
-        cookie_secure: true
+        cookie_secure: false
         cookie_samesite: lax
       # Logging for debugging
       log:
         mode: console
         level: info
       auth.anonymous:
-        enabled: true
-        org_role: Viewer
+        enabled: false
       # Datasource proxy settings
       datasources:
         timeout: 60
