@@ -9,15 +9,15 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-  - name: https
-    protocol: HTTPS
-    port: 443
-    hostname: keycloak.maelkloud.com
-    tls:
-      mode: Terminate
-      certificateRefs:
-      - name: keycloak-cert
-        kind: Secret
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: keycloak.maelkloud.com
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: keycloak-cert
+            kind: Secret
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -26,11 +26,11 @@ metadata:
   namespace: keycloak
 spec:
   parentRefs:
-  - name: main-gateway
-    namespace: istio-system
+    - name: main-gateway
+      namespace: istio-system
   hostnames:
-  - keycloak.maelkloud.com
+    - keycloak.maelkloud.com
   rules:
-  - backendRefs:
-    - name: keycloak-keycloak-keycloakx-http
-      port: 80
+    - backendRefs:
+        - name: keycloak-keycloak-keycloakx-http
+          port: 80
