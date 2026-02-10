@@ -12,5 +12,5 @@ spec:
     name: mkloudlab
     namespace: flux-system
   targetNamespace: observability
-  wait: true
+  wait: false
   timeout: 5m
