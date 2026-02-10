@@ -19,9 +19,10 @@ spec:
   install:
     createNamespace: true
   values:
-    # Image override - use latest stable for ARM64 compatibility
+    # Image override - use JDK 17 based image for ARM64/QEMU compatibility
+    # JDK 21 crashes with SIGILL on QEMU ARM64 VMs
     image:
-      tag: "26.0.7"
+      tag: "21.1.2"
 
     # Admin Credentials - Using External Secrets
     existingSecret: "keycloak-admin"
