@@ -19,6 +19,10 @@ spec:
   install:
     createNamespace: true
   values:
+    # Image override - use latest stable for ARM64 compatibility
+    image:
+      tag: "26.0.7"
+
     # Admin Credentials - Using External Secrets
     existingSecret: "keycloak-admin"
     existingSecretKey: "password"
