@@ -4,6 +4,24 @@ Mkloudlab is a production-grade Kubernetes platform managed via GitOps (Flux CD)
 
 ## 🚀 Quick Start
 
+### Interactive local deployment (recommended)
+
+From the repo root, run:
+
+```bash
+task deploy:local
+```
+
+This guides you through: checking prerequisites → bringing up the Vagrant cluster → installing prerequisites → (optional) Cloudflare token → Flux → deploying apps. You can also use **step-by-step mode**:
+
+```bash
+task deploy:menu
+```
+
+---
+
+### Manual steps
+
 Follow this chronological order to deploy the platform from scratch.
 
 ### 1. Prerequisites
@@ -28,11 +46,12 @@ task scale COUNT=1
 ### 3. Cluster Bootstrap
 Install essential cluster components (Gateway API, Storage, Cert-Manager) and set up secrets.
 ```bash
-# 1. Cloudflare Token (Required for TLS)
-./scripts/setup-cloudflare-token.sh
-
-# 2. Install Prerequisites
+# 1. Install Prerequisites
 task install:prerequisites
+
+# 2. Cloudflare Token (optional, for TLS)
+export CLOUDFLARE_API_TOKEN=your_token
+task certificates:configure-token
 ```
 
 ### 4. GitOps Deployment (Flux)

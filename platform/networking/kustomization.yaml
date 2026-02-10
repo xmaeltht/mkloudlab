@@ -4,6 +4,5 @@ resources:
   - namespace.yaml
   - metallb/source.yaml
   - metallb/helmrelease.yaml
-  - metallb/ipaddresspool.yaml
   - external-dns/source.yaml
   - external-dns/helmrelease.yaml

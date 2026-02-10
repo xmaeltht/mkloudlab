@@ -21,6 +21,22 @@ tasks:
       - task --list-all
 
   # =============================================================================
+  # INTERACTIVE LOCAL DEPLOYMENT
+  # =============================================================================
+
+  deploy:local:
+    desc: Interactive local deployment (Vagrant → Prerequisites → Flux → Apps)
+    cmds:
+      - chmod +x scripts/deploy-local.sh
+      - ./scripts/deploy-local.sh full
+
+  deploy:menu:
+    desc: Step-by-step menu for local deployment (choose each step)
+    cmds:
+      - chmod +x scripts/deploy-local.sh
+      - ./scripts/deploy-local.sh menu
+
+  # =============================================================================
   # SETUP & INSTALLATION
   # =============================================================================
 
@@ -72,6 +88,7 @@ tasks:
       - echo "Infrastructure layer..."
       - kubectl apply -f platform/flux/apps/cert-manager.yaml
       - kubectl apply -f platform/flux/apps/external-secrets.yaml
+      - kubectl apply -f platform/kyverno/namespace.yaml
       - kubectl apply -f platform/flux/apps/kyverno.yaml
       - kubectl apply -f platform/flux/apps/kyverno-policies.yaml
       - kubectl apply -f platform/flux/apps/security-config.yaml
@@ -163,6 +180,32 @@ tasks:
           echo "Flux resources:"
           kubectl get gitrepositories,helmrepositories,kustomizations,helmreleases -n {{.FLUX_NAMESPACE}}
         fi
+
+  flux:status-all:
+    desc: Show Flux status across all namespaces (includes HelmReleases in cert-manager, kyverno, etc.)
+    cmds:
+      - |
+        if command -v flux &> /dev/null; then
+          echo "=== Git + Helm sources (flux-system) ==="
+          flux get sources git -n {{.FLUX_NAMESPACE}}
+          flux get sources helm -n {{.FLUX_NAMESPACE}}
+          echo ""
+          echo "=== Kustomizations ==="
+          flux get kustomizations -n {{.FLUX_NAMESPACE}}
+          echo ""
+          echo "=== HelmReleases (all namespaces) ==="
+          flux get helmreleases -A
+        else
+          kubectl get gitrepositories,helmrepositories,kustomizations -n {{.FLUX_NAMESPACE}}
+          kubectl get helmreleases -A
+        fi
+
+  flux:fix-and-sync:
+    desc: Fix cluster DNS then reconcile all Flux sources and show status (run when apps won't deploy)
+    cmds:
+      - task: fix:dns
+      - echo "=== Flux status (check for Ready=True) ==="
+      - task: flux:status-all
 
   # =============================================================================
   # GITOPS WORKFLOW
@@ -336,6 +379,12 @@ tasks:
     desc: Format code with prettier
     cmds:
       - npx prettier --write "**/*.{yaml,yml,json,md}"
+
+  fix:dns:
+    desc: Fix cluster DNS (CoreDNS upstream) so pods can resolve external hostnames (e.g. github.com)
+    cmds:
+      - chmod +x scripts/fix-coredns-dns.sh
+      - ./scripts/fix-coredns-dns.sh
 
   validate:cluster:
     desc: Validate cluster connectivity and prerequisites

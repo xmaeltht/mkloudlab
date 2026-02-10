@@ -224,6 +224,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               name: istio-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
         - podSelector:
             matchLabels:
               app.kubernetes.io/part-of: kyverno
@@ -237,6 +240,8 @@ spec:
       ports:
         - protocol: TCP
           port: 443
+        - protocol: TCP
+          port: 6443
         - protocol: TCP
           port: 80
         - protocol: UDP

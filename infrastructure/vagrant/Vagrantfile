@@ -38,7 +38,7 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
       v.customize ["modifyvm", :id, "--ioapic", "on"]
-      v.customize ["storagectl", :id, "--name", "SATA Controller", "--hostiocache", "on"]
+      v.customize ["storagectl", :id, "--name", "VirtIO Controller", "--hostiocache", "on"]
     end
 
     node.vm.provider :libvirt do |v|
@@ -67,7 +67,7 @@ Vagrant.configure(VAGRANT_API_VERSION) do |config|
         v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
         v.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
         v.customize ["modifyvm", :id, "--ioapic", "on"]
-        v.customize ["storagectl", :id, "--name", "SATA Controller", "--hostiocache", "on"]
+        v.customize ["storagectl", :id, "--name", "VirtIO Controller", "--hostiocache", "on"]
       end
 
       node.vm.provider :libvirt do |v|

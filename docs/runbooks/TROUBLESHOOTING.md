@@ -104,6 +104,32 @@ kubectl get storageclass
 kubectl describe storageclass <storage-class-name>
 ```
 
+### Issue: Flux GitRepository cannot clone (DNS)
+
+#### Symptoms
+
+- `gitrepository/mkloudlab` shows: `failed to checkout and determine revision: unable to clone ... dial tcp: lookup github.com on 10.96.0.10:53: server misbehaving`
+- Kustomizations show: `Source artifact not found, retrying in 30s`
+
+#### Cause
+
+CoreDNS in the cluster is forwarding to the node’s `/etc/resolv.conf` (e.g. VirtualBox NAT), which often fails for pods.
+
+#### Solution
+
+Patch CoreDNS to use reliable upstream DNS, then restart Flux reconciliation:
+
+```bash
+task fix:dns
+# Wait for CoreDNS rollout, then trigger Flux to retry
+flux reconcile source git mkloudlab -n flux-system
+task flux:status
+```
+
+Optional: use custom upstreams: `UPSTREAM_DNS="1.1.1.1 1.0.0.1" task fix:dns`
+
+---
+
 ### Issue 2: Service Not Accessible
 
 #### Symptoms

@@ -1,0 +1,17 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: vagrant-pool
+  namespace: networking
+spec:
+  addresses:
+    - 172.16.16.150-172.16.16.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: vagrant-l2
+  namespace: networking
+spec:
+  ipAddressPools:
+    - vagrant-pool
