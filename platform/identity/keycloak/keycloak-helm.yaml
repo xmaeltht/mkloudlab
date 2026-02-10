@@ -72,8 +72,6 @@ spec:
         value: "false"
       - name: KC_HOSTNAME_STRICT_BACKCHANNEL
         value: "false"
-      - name: KC_PROXY_HEADERS
-        value: "xforwarded"
       - name: KC_HOSTNAME_STRICT_HTTPS
         value: "false"
 
@@ -91,7 +89,7 @@ spec:
       - "/opt/keycloak/bin/kc.sh"
       - "start"
       - "--cache=local"
-      - "--proxy-headers=xforwarded"
+      - "--proxy=edge"
 
     # Security Context - Pod Level
     securityContext:
