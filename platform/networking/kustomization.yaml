@@ -7,8 +7,3 @@ resources:
   - metallb/ipaddresspool.yaml
   - external-dns/source.yaml
   - external-dns/helmrelease.yaml
-  - tailscale/namespace.yaml
-  - tailscale/source.yaml
-  - tailscale/helmrelease.yaml
-  - tailscale/ingress-service.yaml
-  # Note: oauth-secret.yaml must be created manually with your Tailscale OAuth credentials

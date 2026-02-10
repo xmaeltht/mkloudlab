@@ -19,7 +19,6 @@ spec:
             - kyverno
             - cilium-secrets
             - metallb-system
-            - tailscale  # Tailscale proxy needs direct network access without Istio
       mutate:
         patchStrategicMerge:
           metadata:

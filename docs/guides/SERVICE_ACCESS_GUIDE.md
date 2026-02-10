@@ -70,17 +70,16 @@ All services have valid Let's Encrypt certificates for HTTPS.
 ### Pages Load Slowly
 
 **Causes:**
-1. MTU issues with Tailscale
-2. Network congestion
-3. Service resource constraints
+1. Network congestion
+2. Service resource constraints
 
 **Solutions:**
 ```bash
-# Check Tailscale connection
-tailscale status | grep mkloud
+# Check gateway status
+kubectl get svc main-gateway-istio -n istio-system
 
-# Should show "direct" not "relay"
-# If relay, performance will be slower
+# Check service pods are running
+kubectl get pods -A --field-selector=status.phase!=Running
 ```
 
 ### 404 Errors on Tempo/Loki
@@ -95,7 +94,7 @@ Use them through Grafana instead.
 
 - [ ] Using `https://` URLs (not `http://`)
 - [ ] Only accessing services with web UIs
-- [ ] Tailscale connected and showing "direct" connection
+- [ ] Gateway IP reachable (172.16.16.150)
 - [ ] Certificates accepted in browser
 
 ---
@@ -117,7 +116,7 @@ Use them through Grafana instead.
 1. **Bookmark the HTTPS URLs** - Save yourself typing
 2. **Use Grafana for everything observability** - Don't access backends directly
 3. **Trust the certificates** - They're valid Let's Encrypt certs
-4. **Check Tailscale status** - Ensure "direct" connection for best performance
+4. **Check gateway status** - Run `task gateway:status` to verify routing
 
 ---
 

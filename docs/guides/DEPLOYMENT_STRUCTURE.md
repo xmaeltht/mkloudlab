@@ -1,35 +1,56 @@
 # Deployment Order & Structure
 
-## Prerequisites (Deploy BEFORE ArgoCD)
+## Prerequisites (Deploy BEFORE Flux)
 
 1. **Gateway API** - Install Gateway API CRDs
 2. **local-path Storage** - Storage provisioner for PVCs
 3. **metrics-server** - Resource metrics collection
 4. **cert-manager** - TLS certificate management
-5. **Istio** - Service mesh and ingress
-6. **ArgoCD** - GitOps controller
+5. **Istio** - Installed via Flux HelmRelease (see platform/flux/apps/istio.yaml)
 
-## ArgoCD Applications (Deploy AFTER prerequisites)
+## Flux Applications (Deploy AFTER prerequisites)
 
-1. **Infrastructure Layer**
-   - external-secrets
-   - kyverno-engine
-   - kyverno-policies
-   - security-config
+Apply Flux app definitions with `task install:apps`. Flux then reconciles from Git and deploys the following.
 
-2. **Application Layer**
-   - keycloak
-   - monitoring (Prometheus & Grafana)
-   - alloy (Grafana Alloy OTLP collector)
-   - tempo (Grafana Tempo traces)
-   - loki-stack
+### 1. Infrastructure Layer
+
+- external-secrets (`platform/external-secrets`)
+- kyverno (`platform/kyverno` via HelmRelease)
+- kyverno-policies (`platform/kyverno`)
+- security-config (`platform/security`)
+- neuvector (`platform/neuvector` - namespace, CRD and core HelmReleases)
+- cluster-config (`platform/cert-manager`)
+
+### 2. Networking Layer
+
+- networking (`platform/networking` - MetalLB, external-dns)
+- istio (HelmRelease)
+- istio-config (`platform/istio` - Gateways, HTTPRoutes)
+
+### 3. Application Layer
+
+- keycloak (`platform/identity/keycloak`)
+- minio (`platform/storage/minio`)
+
+### 4. Observability Layer
+
+- alloy (Grafana Alloy OTLP collector - HelmRelease)
+- tempo (`platform/observability/tempo`)
+- prometheus (`platform/observability/prometheus`)
+- grafana (`platform/observability/grafana`)
+- loki (`platform/observability/loki`)
 
 ## Gateway API Resources Needed
 
-Each application needs:
+Each application that is exposed externally needs:
 
-- Gateway (shared or per-app)
+- Gateway (shared main-gateway in istio-system or per-app)
 - HTTPRoute
 - Service
 - Certificate (via cert-manager)
-- VirtualService (Istio-specific)
+- VirtualService (Istio-specific where used)
+
+## Reference
+
+- Task order: [Taskfile.yml](../../Taskfile.yml) – see `install`, `install:apps`, `install:prerequisites`
+- Flux app definitions: [platform/flux/apps/](../../platform/flux/apps/)

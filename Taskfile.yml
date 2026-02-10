@@ -75,6 +75,8 @@ tasks:
       - kubectl apply -f platform/flux/apps/kyverno.yaml
       - kubectl apply -f platform/flux/apps/kyverno-policies.yaml
       - kubectl apply -f platform/flux/apps/security-config.yaml
+      - echo "NeuVector (container security)..."
+      - kubectl apply -f platform/flux/apps/neuvector.yaml
       - kubectl apply -f platform/flux/apps/cluster-config.yaml
       - echo "Networking layer..."
       - kubectl apply -f platform/flux/apps/networking.yaml

@@ -10,8 +10,9 @@ This document outlines the security improvements implemented in the Mkloudlab Ku
 
 All namespaces now implement Pod Security Standards with appropriate enforcement levels:
 
-- **Restricted**: `keycloak`, `monitoring`, `observability`, `default`
-- **Baseline**: `argocd`, `kyverno`, `cert-manager`
+- **Restricted**: `observability`
+- **Baseline**: `kyverno`, `cert-manager`
+- **Privileged** (for Istio mesh): `keycloak`
 
 **Benefits**:
 
@@ -22,7 +23,7 @@ All namespaces now implement Pod Security Standards with appropriate enforcement
 
 ### 2. External Secrets Operator
 
-**Location**: `platform/argocd/apps/external-secrets-app.yaml`
+**Location**: `platform/external-secrets/` (Flux Kustomization: `platform/flux/apps/external-secrets.yaml`)
 
 Secure secrets management without storing sensitive data in Git:
 
@@ -43,7 +44,7 @@ kubectl get externalsecrets -A
 
 ### 3. Enhanced Network Policies
 
-**Location**: `platform/security/network-policies.yaml`
+**Location**: `platform/security/network-policies.yaml` and `platform/observability/network-policies.yaml`
 
 Comprehensive micro-segmentation with:
 
@@ -73,7 +74,6 @@ Fine-grained access control with:
 
 **Service Accounts Created**:
 
-- `argocd-deployer`: GitOps deployments
 - `monitoring-reader`: Observability access
 - `security-scanner`: Security operations
 - `alloy`: Grafana Alloy daemonset (cluster log/metric collection)
@@ -81,7 +81,7 @@ Fine-grained access control with:
 
 ### 5. Enhanced Monitoring & Alerting
 
-**Location**: `platform/observability/prometheus-grafana/prometheus_grafana.yaml`
+**Location**: `platform/observability/prometheus/` and `platform/observability/grafana/` (Flux: `platform/flux/apps/prometheus.yaml`, `platform/flux/apps/grafana.yaml`)
 
 Improved observability with:
 
@@ -92,12 +92,12 @@ Improved observability with:
 
 ### 6. Centralized Logging
 
-**Location**: `platform/argocd/apps/loki-stack-app.yaml`
+**Location**: `platform/observability/loki/` (Flux: `platform/flux/apps/loki.yaml`). Alloy (OTLP collector) replaces Promtail for log collection.
 
 Centralized log management with:
 
 - **Loki**: Log aggregation and storage
-- **Promtail**: Log collection from all pods
+- **Grafana Alloy**: OTLP and log collection from workloads
 - **Grafana**: Log visualization and analysis
 - **Persistent storage**: Log retention
 
@@ -137,7 +137,7 @@ The enhanced monitoring now tracks:
 
 ### Security Configuration Application
 
-**Location**: `platform/argocd/apps/security-config-app.yaml`
+**Location**: `platform/flux/apps/security-config.yaml` (Flux Kustomization pointing to `platform/security/`)
 
 Automatically deploys all security configurations:
 

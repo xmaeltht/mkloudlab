@@ -86,6 +86,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://alloy-gateway.observability:4318
 - **Pod Security Standards**: Enforced (Restricted/Baseline).
 - **Network Policies**: Default deny + allow-listing.
 - **Secrets**: Managed via External Secrets Operator.
+- **NeuVector**: Container and runtime security (CVE scanning, network segmentation). Deployed in the `neuvector` namespace. To access the manager UI: `kubectl port-forward -n neuvector svc/neuvector-manager-svc 8443:8443` then open https://localhost:8443 (default credentials in [NeuVector docs](https://open-docs.neuvector.com)).
 
 ## 📚 Documentation
 - [Available Tasks](./docs/reference/TASKS.md)

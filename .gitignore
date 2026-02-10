@@ -11,6 +11,7 @@ tfplan
 terraform.tfvars
 *.tfvars
 pulumi-token
+.minio-credentials
 
 # IDE and editor files
 .idea/
@@ -67,4 +68,3 @@ kubeconfig
 # Helm values with secrets (use *-values-secret.yaml pattern)
 *-values-secret.yaml
 *-secret-values.yaml
-platform/networking/tailscale/oauth-secret.yaml

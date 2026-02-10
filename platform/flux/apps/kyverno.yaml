@@ -16,7 +16,7 @@ spec:
         namespace: flux-system
       interval: 1h
   values:
-    replicaCount: 3
+    replicaCount: 1
     image:
       pullPolicy: IfNotPresent
     resources:

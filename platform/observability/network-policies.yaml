@@ -22,7 +22,7 @@ spec:
               kubernetes.io/metadata.name: istio-system
           podSelector:
             matchLabels:
-              istio.io/gateway-name: main-gateway
+              gateway.networking.k8s.io/gateway-name: main-gateway
       ports:
         - protocol: TCP
           port: 3000
@@ -33,7 +33,7 @@ spec:
               kubernetes.io/metadata.name: observability
           podSelector:
             matchLabels:
-              istio.io/gateway-name: grafana-gateway
+              gateway.networking.k8s.io/gateway-name: grafana-gateway
       ports:
         - protocol: TCP
           port: 3000
@@ -65,7 +65,7 @@ spec:
               kubernetes.io/metadata.name: istio-system
           podSelector:
             matchLabels:
-              istio.io/gateway-name: main-gateway
+              gateway.networking.k8s.io/gateway-name: main-gateway
       ports:
         - protocol: TCP
           port: 9090
@@ -78,7 +78,7 @@ spec:
               kubernetes.io/metadata.name: observability
           podSelector:
             matchLabels:
-              istio.io/gateway-name: prometheus-gateway
+              gateway.networking.k8s.io/gateway-name: prometheus-gateway
       ports:
         - protocol: TCP
           port: 9090
@@ -111,7 +111,7 @@ spec:
               kubernetes.io/metadata.name: istio-system
           podSelector:
             matchLabels:
-              istio.io/gateway-name: main-gateway
+              gateway.networking.k8s.io/gateway-name: main-gateway
       ports:
         - protocol: TCP
           port: 3100
@@ -122,7 +122,7 @@ spec:
               kubernetes.io/metadata.name: observability
           podSelector:
             matchLabels:
-              istio.io/gateway-name: loki-gateway
+              gateway.networking.k8s.io/gateway-name: loki-gateway
       ports:
         - protocol: TCP
           port: 3100
@@ -175,7 +175,7 @@ spec:
               kubernetes.io/metadata.name: istio-system
           podSelector:
             matchLabels:
-              istio.io/gateway-name: main-gateway
+              gateway.networking.k8s.io/gateway-name: main-gateway
       ports:
         - protocol: TCP
           port: 3200
@@ -186,7 +186,7 @@ spec:
               kubernetes.io/metadata.name: observability
           podSelector:
             matchLabels:
-              istio.io/gateway-name: tempo-gateway
+              gateway.networking.k8s.io/gateway-name: tempo-gateway
       ports:
         - protocol: TCP
           port: 3200
@@ -218,7 +218,7 @@ spec:
               kubernetes.io/metadata.name: istio-system
           podSelector:
             matchLabels:
-              istio.io/gateway-name: main-gateway
+              gateway.networking.k8s.io/gateway-name: main-gateway
       ports:
         - protocol: TCP
           port: 12345
