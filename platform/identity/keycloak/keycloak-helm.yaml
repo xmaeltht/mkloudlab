@@ -62,8 +62,6 @@ spec:
         value: edge
       - name: KC_HTTP_ENABLED
         value: "true"
-      - name: KC_HOSTNAME
-        value: "keycloak.maelkloud.com"
       - name: KC_HOSTNAME_URL
         value: "https://keycloak.maelkloud.com"
       - name: KC_HOSTNAME_ADMIN_URL
