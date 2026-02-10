@@ -12,10 +12,8 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Allow webhook calls from Kubernetes API server
-    - from:
-        - namespaceSelector: {}
-      ports:
+    # Allow webhook calls from Kubernetes API server (host network)
+    - ports:
         - protocol: TCP
           port: 10250
         - protocol: TCP
