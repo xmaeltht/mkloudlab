@@ -4,3 +4,4 @@ resources:
   - namespace.yaml
   - neuvector-crd-helmrelease.yaml
   - neuvector-helmrelease.yaml
+  - certificate.yaml

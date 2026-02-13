@@ -102,7 +102,8 @@ tasks:
       - echo "Application layer..."
       - kubectl apply -f platform/flux/apps/keycloak.yaml
       # keycloak-gateway removed - keycloak kustomization handles all resources
-      - echo "Storage layer..."
+      - echo "Storage layer (MinIO operator required before MinIO tenant)..."
+      - kubectl apply -f platform/flux/apps/minio-operator.yaml
       - kubectl apply -f platform/flux/apps/minio.yaml
       - echo "Observability layer..."
       - kubectl apply -f platform/flux/apps/alloy.yaml
@@ -263,7 +264,7 @@ tasks:
   # =============================================================================
 
   certificates:configure-token:
-    desc: Configure Cloudflare API token for certificate issuance
+    desc: Configure Cloudflare API token (cert-manager + external-dns in networking)
     cmds:
       - |
         if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
@@ -275,7 +276,35 @@ tasks:
         kubectl create secret generic cloudflare-api-token-secret \
           --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
           -n cert-manager --dry-run=client -o yaml | kubectl apply -f -
-      - echo "✅ Cloudflare API token configured"
+      - |
+        kubectl create namespace networking --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create secret generic cloudflare-api-token-secret \
+          --from-literal=api-token="$CLOUDFLARE_API_TOKEN" \
+          -n networking --dry-run=client -o yaml | kubectl apply -f -
+      - echo "✅ Cloudflare API token configured (cert-manager + networking for external-dns)"
+
+  secrets:keycloak-db:
+    desc: Create Keycloak PostgreSQL + admin source secrets in secrets-store (so ESO can sync to keycloak ns)
+    cmds:
+      - |
+        kubectl create namespace secrets-store --dry-run=client -o yaml | kubectl apply -f -
+      - |
+        KEYCLOAK_DB_USER="${KEYCLOAK_DB_USER:-keycloak}"
+        KEYCLOAK_DB_PASSWORD="${KEYCLOAK_DB_PASSWORD:-keycloak}"
+        KEYCLOAK_DB_NAME="${KEYCLOAK_DB_NAME:-keycloak}"
+        kubectl create secret generic keycloak-postgresql -n secrets-store \
+          --from-literal=postgres-user="$KEYCLOAK_DB_USER" \
+          --from-literal=postgres-password="$KEYCLOAK_DB_PASSWORD" \
+          --from-literal=postgres-db="$KEYCLOAK_DB_NAME" \
+          --dry-run=client -o yaml | kubectl apply -f -
+      - |
+        KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
+        KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-Keycloak123!}"
+        kubectl create secret generic keycloak-admin -n secrets-store \
+          --from-literal=username="$KEYCLOAK_ADMIN_USER" \
+          --from-literal=password="$KEYCLOAK_ADMIN_PASSWORD" \
+          --dry-run=client -o yaml | kubectl apply -f -
+      - echo "✅ Keycloak DB + admin secrets created in secrets-store (External Secrets will sync to keycloak namespace)"
 
   certificates:apply-all:
     desc: Apply all certificate manifests
@@ -620,6 +649,7 @@ tasks:
       - 'echo "Prometheus: https://prometheus.maelkloud.com"'
       - 'echo "MinIO API: https://minio.maelkloud.com"'
       - 'echo "MinIO Console: https://minio-console.maelkloud.com"'
+      - 'echo "NeuVector: https://neuvector.maelkloud.com"'
       - echo ""
       - echo "=== Gateway Status ==="
       - kubectl get gateways -A 2>/dev/null || echo "No gateways found"

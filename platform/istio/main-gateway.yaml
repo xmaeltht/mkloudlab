@@ -122,3 +122,16 @@ spec:
           - name: minio-console-cert
             kind: Secret
             namespace: minio
+    - name: https-neuvector
+      port: 443
+      protocol: HTTPS
+      hostname: "neuvector.maelkloud.com"
+      allowedRoutes:
+        namespaces:
+          from: All
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: neuvector-cert
+            kind: Secret
+            namespace: neuvector

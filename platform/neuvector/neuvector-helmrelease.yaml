@@ -25,5 +25,8 @@ spec:
   targetNamespace: neuvector
   values:
     manager:
+      # Disable TLS on manager so Istio Gateway can terminate TLS and forward HTTP
+      env:
+        ssl: false
       svc:
         type: ClusterIP
