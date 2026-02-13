@@ -81,7 +81,8 @@ spec:
           cpu: 500m
           memory: 256Mi
 
-    # Cert Controller security
+    # Cert Controller security and probes
+    # healthz often fails until webhook TLS bootstrap completes; give it time via startup probe
     certController:
       securityContext:
         runAsNonRoot: true
@@ -108,3 +109,12 @@ spec:
         limits:
           cpu: 500m
           memory: 256Mi
+
+      # Lenient startup so readiness isn't checked until healthz has time to pass
+      startupProbe:
+        enabled: true
+        useReadinessProbePort: true
+      readinessProbe:
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        failureThreshold: 12
