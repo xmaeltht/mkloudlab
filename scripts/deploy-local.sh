@@ -163,7 +163,7 @@ run_step_by_step() {
     echo "  3) Cloudflare token (TLS)"
     echo "  4) Install Flux"
     echo "  5) Configure Flux GitRepository"
-    echo "  6) Deploy apps (Flux)"
+    echo "  6) Deploy apps (Flux) – Keycloak, MinIO, observability, etc."
     echo "  7) Certificates"
     echo "  8) Show status"
     echo "  q) Quit"

@@ -351,6 +351,25 @@ tasks:
           kubectl describe certificates -n {{.NAMESPACE}}
         fi
 
+  certificates:retry-failed:
+    desc: Delete failed CertificateRequests and ACME Orders so cert-manager creates fresh requests (fixes 'No order found for account ID')
+    cmds:
+      - |
+        echo "Deleting ACME Orders (stale orders cause 'No order found for account ID')..."
+        kubectl get order -A --no-headers 2>/dev/null | while read ns name rest; do
+          echo "  Deleting order $name in $ns"
+          kubectl delete order "$name" -n "$ns" --ignore-not-found
+        done
+      - |
+        echo "Deleting failed CertificateRequests (Ready=False)..."
+        kubectl get certificaterequests -A --no-headers 2>/dev/null | while read ns name ready rest; do
+          if [ "$ready" != "True" ]; then
+            echo "  Deleting $name in $ns"
+            kubectl delete certificaterequest "$name" -n "$ns" --ignore-not-found
+          fi
+        done
+      - 'echo "Done. cert-manager will re-sync Certificates and create new requests. Check in 1-2 min: task certificates:status"'
+
   # =============================================================================
   # CLUSTER OPERATIONS
   # =============================================================================
