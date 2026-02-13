@@ -15,7 +15,6 @@ spec:
         name: external-secrets
         namespace: flux-system
       interval: 1h
-  # Don't wait for all pods ready: cert-controller stays 1/2 (healthz never passes) but ESO works
   install:
     createNamespace: true
     disableWait: true
@@ -56,68 +55,41 @@ spec:
         cpu: 500m
         memory: 256Mi
 
-    # Webhook security
+    # Webhook: use cert-manager instead of cert-controller (avoids cert-controller 1/2 and healthz spam)
     webhook:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        fsGroup: 65534
-        seccompProfile:
-          type: RuntimeDefault
-
-      containerSecurityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        runAsNonRoot: true
-        runAsUser: 65534
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
-
-    # Cert Controller security and probes
-    # healthz often fails until webhook TLS bootstrap completes; give it time via startup probe
-    certController:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        fsGroup: 65534
-        seccompProfile:
-          type: RuntimeDefault
-
-      containerSecurityContext:
-        allowPrivilegeEscalation: false
-        readOnlyRootFilesystem: true
-        runAsNonRoot: true
-        runAsUser: 65534
-        capabilities:
-          drop:
-            - ALL
-        seccompProfile:
-          type: RuntimeDefault
-
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits:
-          cpu: 500m
-          memory: 256Mi
-
-      # Lenient startup so readiness isn't checked until healthz has time to pass
-      startupProbe:
+      certManager:
         enabled: true
-        useReadinessProbePort: true
-      readinessProbe:
-        initialDelaySeconds: 30
-        periodSeconds: 10
-        failureThreshold: 12
+        cert:
+          create: true
+          issuerRef:
+            kind: ClusterIssuer
+            name: self-signed
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      containerSecurityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        runAsNonRoot: true
+        runAsUser: 65534
+        capabilities:
+          drop:
+            - ALL
+        seccompProfile:
+          type: RuntimeDefault
+
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi
+
+    # Disable cert-controller; webhook cert is provided by cert-manager (self-signed ClusterIssuer)
+    certController:
+      create: false
